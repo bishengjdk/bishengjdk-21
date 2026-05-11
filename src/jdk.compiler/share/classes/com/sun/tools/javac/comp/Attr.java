@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -4257,7 +4257,7 @@ public class Attr extends JCTree.Visitor {
         }
 
         List<Type> expectedRecordTypes;
-        if (site.tsym.kind == Kind.TYP && ((ClassSymbol) site.tsym).isRecord()) {
+        if (site.tsym instanceof ClassSymbol clazz && clazz.isRecord()) {
             ClassSymbol record = (ClassSymbol) site.tsym;
             expectedRecordTypes = record.getRecordComponents()
                                         .stream()
