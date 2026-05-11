@@ -538,15 +538,51 @@ ExceptionMark::~ExceptionMark() {
 
 // caller frees value_string if necessary
 void Exceptions::debug_check_abort(const char *value_string, const char* message) {
-  if (AbortVMOnException != nullptr && value_string != nullptr &&
-      strstr(AbortVMOnException, value_string)) {
-    if (AbortVMOnExceptionMessage == nullptr || (message != nullptr &&
-        strstr(message, AbortVMOnExceptionMessage))) {
-      if (message == nullptr) {
-        fatal("Saw %s, aborting", value_string);
-      } else {
-        fatal("Saw %s: %s, aborting", value_string, message);
+  if (value_string == nullptr || AbortVMOnException == nullptr) {
+    return;
+  }
+
+  bool should_abort = false;
+
+  // Check if contains commas to determine matching mode
+  if (strchr(AbortVMOnException, ',') != nullptr) {
+    // Multi-exception mode: exact matching
+    const char* start = AbortVMOnException;
+    const char* end;
+
+    while (*start) {
+      end = strchr(start, ',');
+      if (end == nullptr) {
+        end = start + strlen(start);
       }
+      size_t len = end - start;
+
+      // Remove trailing spaces
+      while (len > 0 && start[len - 1] == ' ') { len--; }
+
+      // Exact match
+      if (len == strlen(value_string) && strncmp(start, value_string, len) == 0) {
+        should_abort = true;
+        break;
+      }
+
+      if (*end == ',') {
+        start = end + 1;
+      } else {
+        break;
+      }
+    }
+  } else {
+    // Single exception mode: keep original logic
+    should_abort = (strstr(value_string, AbortVMOnException) != nullptr);
+  }
+
+  if (should_abort && (AbortVMOnExceptionMessage == nullptr ||
+      (message != nullptr && strstr(message, AbortVMOnExceptionMessage)))) {
+    if (message == nullptr) {
+      fatal("Saw %s, aborting", value_string);
+    } else {
+      fatal("Saw %s: %s, aborting", value_string, message);
     }
   }
 }
