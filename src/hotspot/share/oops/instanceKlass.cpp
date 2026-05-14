@@ -3883,6 +3883,14 @@ void InstanceKlass::print_class_load_logging(ClassLoaderData* loader_data,
   if (log_is_enabled(Debug, class, load)) {
     stringStream debug_stream;
 
+    if (PrintClassLoadingDetails) {
+      debug_stream.date_stamp(true);
+      OSThread* osThread = Thread::current()->osthread();
+      if (osThread != NULL) {
+        debug_stream.print(" tid: %d", osThread->thread_id());
+      }
+    }
+
     // Class hierarchy info
     debug_stream.print(" klass: " PTR_FORMAT " super: " PTR_FORMAT,
                        p2i(this),  p2i(superklass()));
@@ -3908,6 +3916,18 @@ void InstanceKlass::print_class_load_logging(ClassLoaderData* loader_data,
                          cfs->length(),
                          ClassLoader::crc32(0, (const char*)cfs->buffer(),
                          cfs->length()));
+    }
+
+    if (PrintClassLoadingDetails) {
+      const char* klass_name = external_name();
+      Thread* current = Thread::current();
+      if (PrintThreadStackOnLoadingClass != NULL && klass_name != NULL &&
+          strstr(klass_name, PrintThreadStackOnLoadingClass) && current->is_Java_thread()) {
+        JavaThread* javaThread = JavaThread::cast(current);
+        debug_stream.print("\n");
+        javaThread->print_on(&debug_stream);
+        javaThread->print_stack_on(&debug_stream);
+      }
     }
 
     msg.debug("%s", debug_stream.as_string());
