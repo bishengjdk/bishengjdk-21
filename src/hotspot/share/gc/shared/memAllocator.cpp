@@ -122,6 +122,18 @@ bool MemAllocator::Allocation::check_out_of_memory() {
 
   const char* message = _overhead_limit_exceeded ? "GC overhead limit exceeded" : "Java heap space";
   if (!_thread->in_retryable_allocation()) {
+    // Log Enhancement: enhance java heap oom err log
+    if (!_overhead_limit_exceeded) {
+      ResourceMark rm;
+      tty->print_cr("OOM caused by java heap space occurred, allocate size: %zu bytes, type: %s", _allocator._word_size * HeapWordSize, _allocator._klass->signature_name());
+      Universe::heap()->print_on(tty);
+
+      if (THREAD->is_Java_thread()) {
+        tty->print_cr("current stack trace:");
+        ((JavaThread*)THREAD)->print_stack_on(tty);
+      }
+      message = err_msg("Java heap space, allocate size: %zu bytes, type: %s", _allocator._word_size * HeapWordSize, _allocator._klass->signature_name());
+    }
     // -XX:+HeapDumpOnOutOfMemoryError and -XX:OnOutOfMemoryError support
     report_java_out_of_memory(message);
 

@@ -1426,6 +1426,10 @@ void os::pd_print_cpu_info(outputStream* st, char* buf, size_t buflen) {
 #endif
 }
 
+void os::pd_print_file_descriptor(outputStream* st) {
+  // Nothing to do for now.
+}
+
 void os::get_summary_cpu_info(char* buf, size_t buflen) {
   unsigned int mhz;
   size_t size = sizeof(mhz);

@@ -1097,6 +1097,13 @@ void os::print_instructions(outputStream* st, address pc, int unitsize) {
   print_hex_dump(st, pc - 256, pc + 256, unitsize, /* print_ascii=*/false);
 }
 
+void os::print_file_descriptor(outputStream* st) {
+  // file descriptor
+  st->print("File Descriptor:");
+  st->cr();
+  pd_print_file_descriptor(st);
+}
+
 void os::print_environment_variables(outputStream* st, const char** env_list) {
   if (env_list) {
     st->print_cr("Environment Variables:");
@@ -1229,6 +1236,49 @@ void os::print_date_and_time(outputStream *st, char* buf, size_t buflen) {
   st->print_cr(" elapsed time: %d.%06d seconds (%dd %dh %dm %ds)", eltime, eltimeFraction, eldays, elhours, elmins, elsecs);
 }
 
+void os::print_date_and_time_iso8601(outputStream *st, char* buf, size_t buflen) {
+  const int secs_per_day  = 86400;
+  const int secs_per_hour = 3600;
+  const int secs_per_min  = 60;
+
+  char timestring[os::iso8601_timestamp_size];
+  os::iso8601_time(timestring, sizeof(timestring), false);
+  // edit out the newline
+  char* nl = strchr(timestring, '\n');
+  if (nl != nullptr) {
+    *nl = '\0';
+  }
+
+  time_t tloc;
+  (void)time(&tloc);
+  struct tm tz;
+  if (localtime_pd(&tloc, &tz) != nullptr) {
+    wchar_t w_buf[80];
+    size_t n = ::wcsftime(w_buf, 80, L"%Z", &tz);
+    if (n > 0 && ::wcstombs(buf, w_buf, buflen) != (size_t)-1) {
+      st->print("Time: %s %s", timestring, buf);
+    } else {
+      st->print("Time: %s", timestring);
+    }
+  } else {
+    st->print("Time: %s", timestring);
+  }
+
+  double t = os::elapsedTime();
+  // NOTE: a crash using printf("%f",...) on Linux was historically noted here.
+  int eltime = (int)t;  // elapsed time in seconds
+  int eltimeFraction = (int) ((t - eltime) * 1000000);
+
+  // print elapsed time in a human-readable format:
+  int eldays = eltime / secs_per_day;
+  int day_secs = eldays * secs_per_day;
+  int elhours = (eltime - day_secs) / secs_per_hour;
+  int hour_secs = elhours * secs_per_hour;
+  int elmins = (eltime - day_secs - hour_secs) / secs_per_min;
+  int minute_secs = elmins * secs_per_min;
+  int elsecs = (eltime - day_secs - hour_secs - minute_secs);
+  st->print_cr(" elapsed time: %d.%06d seconds (%dd %dh %dm %ds)", eltime, eltimeFraction, eldays, elhours, elmins, elsecs);
+}
 
 // Check if pointer can be read from (4-byte read access).
 // Helps to prove validity of a non-null pointer.

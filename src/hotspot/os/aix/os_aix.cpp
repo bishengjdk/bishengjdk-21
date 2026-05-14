@@ -1382,6 +1382,10 @@ void os::pd_print_cpu_info(outputStream* st, char* buf, size_t buflen) {
   // Nothing to do beyond of what os::print_cpu_info() does.
 }
 
+void os::pd_print_file_descriptor(outputStream* st) {
+  // Nothing to do for now.
+}
+
 static char saved_jvm_path[MAXPATHLEN] = {0};
 
 // Find the full path to the current module, libjvm.so.
