@@ -138,7 +138,11 @@ void os::check_dump_limit(char* buffer, size_t bufferSize) {
   } else {
     switch(rlim.rlim_cur) {
       case RLIM_INFINITY:
-        jio_snprintf(buffer, bufferSize, "%s", core_path);
+        jio_snprintf(buffer, bufferSize, "%s\
+        \n#  or /var/lib/systemd/coredump/* (process core dumps by systemd-coredump)\
+        \n#  or /var/lib/apport/coredump/* (process core dumps by apport)\
+        \n#  or /var/spool/abrt/* (process core dumps by abrt-hook-ccpp)\
+        \n#  or other name defined in /proc/sys/kernel/core_pattern", core_path);
         success = true;
         break;
       case 0:
@@ -516,6 +520,7 @@ void os::Posix::print_rlimit_info(outputStream* st) {
   st->print("rlimit (soft/hard):");
   print_rlimit(st, "STACK", RLIMIT_STACK, true);
   print_rlimit(st, ", CORE", RLIMIT_CORE, true);
+  print_rlimit(st, ", RSS", RLIMIT_RSS, true);
 
 #if defined(AIX)
   st->print(", NPROC ");

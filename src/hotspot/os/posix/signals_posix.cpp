@@ -1001,6 +1001,12 @@ static bool get_signal_code_description(const siginfo_t* si, enum_sigcode_desc_t
     { SIGBUS,  BUS_ADRALN,   "BUS_ADRALN",   "Invalid address alignment." },
     { SIGBUS,  BUS_ADRERR,   "BUS_ADRERR",   "Nonexistent physical address." },
     { SIGBUS,  BUS_OBJERR,   "BUS_OBJERR",   "Object-specific hardware error." },
+#ifdef BUS_MCEERR_AR
+    { SIGBUS,  BUS_MCEERR_AR,"BUS_MCEERR_AR","hardware memory error consumed on a machine check: action required."},
+#endif
+#ifdef BUS_MCEERR_AO
+    { SIGBUS,  BUS_MCEERR_AO,"BUS_MCEERR_AO","hardware memory error detected in process but not consumed: action optional."},
+#endif
     { SIGTRAP, TRAP_BRKPT,   "TRAP_BRKPT",   "Process breakpoint." },
     { SIGTRAP, TRAP_TRACE,   "TRAP_TRACE",   "Process trace trap." },
     { SIGCHLD, CLD_EXITED,   "CLD_EXITED",   "Child has exited." },

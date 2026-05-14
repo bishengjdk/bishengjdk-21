@@ -1986,6 +1986,79 @@ static unsigned count_newlines(const char* s) {
   return n;
 }
 
+static bool _print_maps_with_times(pid_t pid, outputStream* st, unsigned* num_lines = nullptr, const char* hdr = nullptr) {
+  char fname[32];
+  jio_snprintf(fname, sizeof(fname), "/proc/%d/maps", pid);
+
+  FILE* fp = fopen(fname, "r");
+  if (fp == nullptr) {
+    return false;
+  }
+
+  if (hdr != nullptr) {
+    st->print_cr("%s", hdr);
+  }
+
+  char buf[PATH_MAX + 1];
+  unsigned lines = 0;
+  while (fgets(buf, sizeof(buf), fp) != nullptr) {
+    // Remove newline characters
+    size_t len = strlen(buf);
+    if (len > 0 && buf[len-1] == '\n') {
+      buf[len-1] = '\0';
+    }
+
+    // Outputs the original line (without newline characters)
+    st->print_raw(buf);
+    lines++;
+
+    // Parsing path
+    char* path_start = nullptr;
+    char* saveptr = nullptr;
+    char* token = strtok_r(buf, " ", &saveptr);
+    int field_count = 0;
+
+    // e.g. ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  /jre/lib/server/libjvm.so
+    while (token != nullptr) {
+      if (field_count == 5) {
+        path_start = token;
+        break;
+      }
+      token = strtok_r(nullptr, " ", &saveptr);
+      field_count++;
+    }
+
+    // Check the file path
+    if (path_start != nullptr && strlen(path_start) > 0) {
+      // e.g. ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+      if (path_start[0] != '[') {
+          struct stat file_stat;
+
+          if (stat(path_start, &file_stat) == 0) {
+          long long ctime_ms = 0;
+          long long mtime_ms = 0;
+          ctime_ms = (long long)file_stat.st_ctim.tv_sec * 1000LL + file_stat.st_ctim.tv_nsec / 1000000LL;
+          mtime_ms = (long long)file_stat.st_mtim.tv_sec * 1000LL + file_stat.st_mtim.tv_nsec / 1000000LL;
+  	      char ctimestring[os::iso8601_timestamp_size];
+  	      os::iso8601_time(ctime_ms, ctimestring, sizeof(ctimestring), false);
+          char mtimestring[os::iso8601_timestamp_size];
+  	      os::iso8601_time(mtime_ms, mtimestring, sizeof(mtimestring), false);
+  	      st->print("    [ctime: %s, mtime: %s]", ctimestring, mtimestring);
+        }
+      }
+    }
+    st->print("\n");
+  }
+
+  if (num_lines != nullptr) {
+    (*num_lines) = lines;
+  }
+
+  fclose(fp);
+
+  return true;
+}
+
 static bool _print_ascii_file(const char* filename, outputStream* st, unsigned* num_lines = nullptr, const char* hdr = nullptr) {
   int fd = ::open(filename, O_RDONLY);
   if (fd == -1) {
@@ -2032,8 +2105,10 @@ void os::print_dll_info(outputStream *st) {
 
   jio_snprintf(fname, sizeof(fname), "/proc/%d/maps", pid);
   unsigned num = 0;
-  if (!_print_ascii_file(fname, st, &num)) {
-    st->print_cr("Can not get library information for pid = %d", pid);
+  if (ExtensiveErrorReports && !_print_maps_with_times(pid, st, &num)) {
+    st->print_cr("Can not get library information(include ctime & mtime) for pid = %d", pid);
+  } else if (!ExtensiveErrorReports && !_print_ascii_file(fname, st, &num)) {
+      st->print_cr("Can not get library information for pid = %d", pid);
   } else {
     st->print_cr("Total number of mappings: %u", num);
   }
@@ -2106,6 +2181,10 @@ void os::print_os_info(outputStream* st) {
 
   os::Posix::print_load_average(st);
   st->cr();
+
+  if (ExtensiveErrorReports) {
+    os::Linux::print_system_process_count(st);
+  }
 
   os::Linux::print_system_memory_info(st);
   st->cr();
@@ -2268,6 +2347,26 @@ void os::Linux::print_proc_sys_info(outputStream* st) {
                       "/proc/sys/vm/swappiness", st);
   _print_ascii_file_h("/proc/sys/kernel/pid_max (system-wide limit on number of process identifiers)",
                       "/proc/sys/kernel/pid_max", st);
+}
+
+void os::Linux::print_system_process_count(outputStream* st) {
+  // system process count
+  DIR *dir = opendir("/proc");
+  if (dir == NULL) {
+    return;
+  }
+
+  st->print("system process count:");
+  uint count = 0;
+  struct dirent *ptr;
+  while ((ptr = readdir(dir)) != NULL) {
+    if(ptr->d_type == DT_DIR && isdigit((ptr->d_name)[0])) {
+      count++;
+    }
+  }
+  (void) closedir(dir);
+  st->print("%u", count);
+  st->cr();
 }
 
 void os::Linux::print_system_memory_info(outputStream* st) {
@@ -2618,6 +2717,47 @@ void os::pd_print_cpu_info(outputStream* st, char* buf, size_t buflen) {
   }
   st->cr();
   print_sys_devices_cpu_info(st);
+}
+
+// max length of file name in linux
+#define MAX_PATH_LEN 256
+// maximum number of file descriptors to print
+#define MAX_PRINT_FD_SIZE 2000
+
+void os::pd_print_file_descriptor(outputStream* st) {
+  int pid = os::current_process_id();
+  char process_path[MAX_PATH_LEN] = {0};
+  (void) snprintf(process_path, MAX_PATH_LEN, "/proc/%d/fd/", pid);
+  st->print_cr("path: %s", process_path);
+
+  DIR *dir = NULL;
+  dir = opendir(process_path);
+  if (dir == NULL) {
+    st->print_cr("opendir %s failed, error='%s' (errno=%d)", process_path, os::strerror(errno), errno);
+    return;
+  }
+
+  // Scan the directory, get symbolic link value
+  struct dirent *ptr;
+  ssize_t readlink_ret = 0;
+  char symbolic_link_value[MAX_PATH_LEN] = {0};
+  char filename[MAX_PATH_LEN] = {0};
+  unsigned long file_count = 0;
+  while ((ptr = readdir(dir)) != NULL) {
+    if (ptr->d_type == DT_DIR) continue;
+    if (file_count < MAX_PRINT_FD_SIZE) {
+      (void) snprintf(filename, MAX_PATH_LEN, "%s%s", process_path, ptr->d_name);
+      readlink_ret = readlink(filename, symbolic_link_value, MAX_PATH_LEN);
+      if (readlink_ret > 0) {
+        st->print_cr("%s -> %s", ptr->d_name, symbolic_link_value);
+      } else {
+        st->print_cr("%s: readlink failed, error='%s' (errno=%d)", ptr->d_name, os::strerror(errno), errno);
+      }
+    }
+    file_count++;
+  }
+  st->print_cr("Total fd count: %lu", file_count);
+  (void) closedir(dir);
 }
 
 #if INCLUDE_JFR
