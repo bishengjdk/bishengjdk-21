@@ -703,6 +703,14 @@ const int ObjectAlignmentInBytes = 8;
   develop(bool, UsePrivilegedStack, true,                                   \
           "Enable the security JVM functions")                              \
                                                                             \
+  product(bool, PrintClassLoadingDetails, false, MANAGEABLE,                \
+          "Print class loading details (including date stamps, thread id "  \
+          "and effective class loaders) when enable TraceClassLoading")     \
+                                                                            \
+  product(ccstr, PrintThreadStackOnLoadingClass, NULL, MANAGEABLE,          \
+          "Print thread stack when the specified class is loaded when "     \
+          "enable PrintClassLoadingDetails")                                \
+                                                                            \
   product(bool, ClassUnloading, true,                                       \
           "Do unloading of classes")                                        \
                                                                             \
