@@ -30,6 +30,8 @@
 #include "services/memBaseline.hpp"
 #include "services/mallocTracker.hpp"
 
+const int START_YEAR = 1900; // tm struct, the number of years since 1900.
+
 /**
  * Native memory tracking DCmd implementation
  */
@@ -58,9 +60,16 @@ class NMTDCmd: public DCmdWithParser {
                         "monitor", nullptr};
     return p;
   }
+  static void set_start_time(const time_t &time) {
+    _start_time = time;
+  }
+  static time_t get_start_time() {
+    return _start_time;
+  }
   virtual void execute(DCmdSource source, TRAPS);
 
  private:
+  static time_t _start_time;
   void report(bool summaryOnly, size_t scale);
   void report_diff(bool summaryOnly, size_t scale);
 
