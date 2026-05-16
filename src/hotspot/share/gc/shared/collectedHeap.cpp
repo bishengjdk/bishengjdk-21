@@ -368,8 +368,7 @@ MetaWord* CollectedHeap::satisfy_failed_metadata_allocation(ClassLoaderData* loa
                                        word_size,
                                        mdtype,
                                        gc_count,
-                                       full_gc_count,
-                                       GCCause::_metadata_GC_threshold);
+                                       full_gc_count);
     VMThread::execute(&op);
 
     // If GC was locked out, try again. Check before checking success because the
