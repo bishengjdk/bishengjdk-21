@@ -57,7 +57,7 @@
           "Address to allocate shared memory region for class data")        \
           range(0, SIZE_MAX)                                                \
                                                                             \
-  product(ccstr, SharedArchiveConfigFile, nullptr,                             \
+  product(ccstr, SharedArchiveConfigFile, nullptr,                          \
           "Data to add to the CDS archive file")                            \
                                                                             \
   product(uint, SharedSymbolTableBucketSize, 4,                             \
@@ -67,25 +67,25 @@
   product(bool, AllowArchivingWithJavaAgent, false, DIAGNOSTIC,             \
           "Allow Java agent to be run with CDS dumping")                    \
                                                                             \
-  develop(ccstr, ArchiveHeapTestClass, nullptr,                                \
+  develop(ccstr, ArchiveHeapTestClass, nullptr,                             \
           "For JVM internal testing only. The static field named "          \
           "\"archivedObjects\" of the specified class is stored in the "    \
           "CDS archive heap")                                               \
                                                                             \
-  product(ccstr, DumpLoadedClassList, nullptr,                                 \
+  product(ccstr, DumpLoadedClassList, nullptr,                              \
           "Dump the names all loaded classes, that could be stored into "   \
           "the CDS archive, in the specified file")                         \
                                                                             \
-  product(ccstr, SharedClassListFile, nullptr,                                 \
+  product(ccstr, SharedClassListFile, nullptr,                              \
           "Override the default CDS class list")                            \
                                                                             \
-  product(ccstr, SharedArchiveFile, nullptr,                                   \
+  product(ccstr, SharedArchiveFile, nullptr,                                \
           "Override the default location of the CDS archive file")          \
                                                                             \
-  product(ccstr, ArchiveClassesAtExit, nullptr,                                \
+  product(ccstr, ArchiveClassesAtExit, nullptr,                             \
           "The path and name of the dynamic archive file")                  \
                                                                             \
-  product(ccstr, ExtraSharedClassListFile, nullptr,                            \
+  product(ccstr, ExtraSharedClassListFile, nullptr,                         \
           "Extra classlist for building the CDS archive file")              \
                                                                             \
   product(int, ArchiveRelocationMode, 1, DIAGNOSTIC,                        \
@@ -95,6 +95,20 @@
            "(2) always map at preferred address, and if unsuccessful, "     \
            "do not map the archive")                                        \
            range(0, 2)                                                      \
+                                                                            \
+  AGGRESSIVE_CDS_ONLY(product(bool, UseAggressiveCDS, false, EXPERIMENTAL,  \
+          "An aggressive stratage to improve start-up "                     \
+          "because we avoid decoding the classfile."))                      \
+                                                                            \
+  AGGRESSIVE_CDS_ONLY(product(bool, CheckClassFileTimeStamp, true, EXPERIMENTAL, \
+          "Check whether the modification time of the"                      \
+          "class file is changed during UseAggressiveCDS."))                \
+                                                                            \
+  product(bool, SkipSharedClassPathCheck, false, DIAGNOSTIC,                \
+          "Skips SharedClassPath check in DynamicCDS, which allows"         \
+          "non-empty directories to exist in classpath when DynamicDS"      \
+          "is used")                                                        \
+                                                                            \
 // end of CDS_FLAGS
 
 DECLARE_FLAGS(CDS_FLAGS)

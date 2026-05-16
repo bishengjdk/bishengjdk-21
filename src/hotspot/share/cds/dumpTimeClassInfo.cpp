@@ -26,6 +26,7 @@
 #include "cds/archiveBuilder.hpp"
 #include "cds/dumpTimeClassInfo.inline.hpp"
 #include "cds/runTimeClassInfo.hpp"
+#include "classfile/classFileStream.hpp"
 #include "classfile/classLoader.hpp"
 #include "classfile/classLoaderData.inline.hpp"
 #include "classfile/systemDictionaryShared.hpp"
@@ -40,6 +41,10 @@ DumpTimeClassInfo::~DumpTimeClassInfo() {
   if (_loader_constraints != nullptr) {
     delete _loader_constraints;
   }
+#if INCLUDE_AGGRESSIVE_CDS
+  free_shared_class_file();
+  free_url_string();
+#endif
 }
 
 size_t DumpTimeClassInfo::runtime_info_bytesize() const {
@@ -181,3 +186,25 @@ void DumpTimeSharedClassTable::update_counts() {
   CountClassByCategory counter(this);
   iterate_all_live_classes(&counter);
 }
+
+#if INCLUDE_AGGRESSIVE_CDS
+void DumpTimeClassInfo::copy_shared_class_file(ClassFileStream* cfs) {
+  assert(_shared_class_file == nullptr, "already have _shared_class_file");
+  int stream_length = cfs->length();
+  int size = offset_of(DTSharedData, data) + stream_length;
+  _shared_class_file = (DTSharedData*) NEW_C_HEAP_ARRAY(u1, size, mtClassShared);
+  _shared_class_file->length = stream_length;
+  memcpy(_shared_class_file->data, cfs->buffer(), stream_length);
+  assert(size == _shared_class_file->obj_size(), "sanity");
+}
+
+void DumpTimeClassInfo::copy_url_string(char* string_value) {
+  assert(strlen(string_value) != 0, "sanity");
+  int string_len = strlen(string_value) + 1;
+  int size = offset_of(DTSharedData, data) + string_len;
+  _url_string = (DTSharedData*) NEW_C_HEAP_ARRAY(u1, size, mtClassShared);
+  _url_string->length = string_len;
+  memcpy(_url_string->data, string_value, string_len);
+  assert(size == _url_string->obj_size(), "sanity");
+}
+#endif // INCLUDE_AGGRESSIVE_CDS

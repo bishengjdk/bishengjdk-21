@@ -3922,6 +3922,27 @@ JVM_LEAF(jint, JVM_FindSignal(const char *name))
   return os::get_signal_number(name);
 JVM_END
 
+JVM_ENTRY(jclass, JVM_DefineTrustedSharedClass(JNIEnv *env, const char *name, jobject loader))
+#if INCLUDE_AGGRESSIVE_CDS
+  assert(UseAggressiveCDS, "sanity");
+  TempNewSymbol class_name = name == nullptr ? nullptr :
+      SystemDictionary::class_name_symbol(name,
+                                          vmSymbols::java_lang_NoClassDefFoundError(),
+                                          CHECK_NULL);
+  Handle class_loader (THREAD, JNIHandles::resolve(loader));
+  InstanceKlass* k = SystemDictionaryShared::lookup_trusted_share_class(class_name,
+                                                                        class_loader,
+                                                                        CHECK_NULL);
+  if (k == nullptr) {
+    return nullptr;
+  }
+
+  return (jclass) JNIHandles::make_local(THREAD, k->java_mirror());
+#else
+  return nullptr;
+#endif // INCLUDE_AGGRESSIVE_CDS
+JVM_END
+
 JVM_ENTRY(void, JVM_VirtualThreadStart(JNIEnv* env, jobject vthread))
 #if INCLUDE_JVMTI
   if (!DoJVMTIVirtualThreadTransitions) {

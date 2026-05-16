@@ -786,6 +786,9 @@
   template(toFileURL_name,                                  "toFileURL")                                          \
   template(toFileURL_signature,                             "(Ljava/lang/String;)Ljava/net/URL;")                 \
   template(url_void_signature,                              "(Ljava/net/URL;)V")                                  \
+  template(codesource_signature,                            "Ljava/security/CodeSource;")                         \
+  template(getProtectionDomainByURLString_name,             "getProtectionDomainByURLString")                     \
+  template(getProtectionDomainByURLString_signature,        "(Ljava/lang/String;)Ljava/security/ProtectionDomain;") \
                                                                                                                   \
   /* ElasticMaxDirectMemory */                                                                                    \
   template(java_nio_Bits,                          "java/nio/Bits")                                               \

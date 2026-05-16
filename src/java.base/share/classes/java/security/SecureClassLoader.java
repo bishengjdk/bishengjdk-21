@@ -27,6 +27,7 @@ package java.security;
 
 import sun.security.util.Debug;
 
+import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -234,6 +235,19 @@ public class SecureClassLoader extends ClassLoader {
                 return pd;
             }
         });
+    }
+
+    /**
+     * get ProtectionDomain From URL.
+     * This method is only for AggressiveCDS.
+     *
+     * @param url the URL.
+     *
+     * @return ProtectionDomain create from URL.
+     */
+    protected ProtectionDomain getProtectionDomainFromURL(URL url) {
+        CodeSource cs = new CodeSource(url, (CodeSigner[]) null);
+        return getProtectionDomain(cs);
     }
 
     private record CodeSourceKey(CodeSource cs) {

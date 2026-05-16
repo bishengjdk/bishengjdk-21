@@ -31,6 +31,7 @@
 #include "cds/dynamicArchive.hpp"
 #include "cds/lambdaFormInvokers.hpp"
 #include "cds/metaspaceShared.hpp"
+#include "classfile/classLoader.hpp"
 #include "classfile/classLoaderData.inline.hpp"
 #include "classfile/symbolTable.hpp"
 #include "classfile/systemDictionaryShared.hpp"
@@ -51,6 +52,9 @@
 #include "utilities/align.hpp"
 #include "utilities/bitMap.inline.hpp"
 
+#ifndef O_BINARY       // if defined (Win32) use binary files.
+#define O_BINARY 0     // otherwise do nothing.
+#endif
 
 class DynamicArchiveBuilder : public ArchiveBuilder {
   const char* _archive_name;
@@ -183,6 +187,14 @@ void DynamicArchiveBuilder::init_header() {
   _header = mapinfo->dynamic_header();
 
   _header->set_base_header_crc(base_info->crc());
+#if INCLUDE_AGGRESSIVE_CDS
+  if (UseAggressiveCDS) {
+    int crc = DynamicArchiveHeader::get_current_program_crc();
+    _header->set_program_crc(crc);
+  } else {
+    _header->set_program_crc(0);
+  }
+#endif // INCLUDE_AGGRESSIVE_CDS
   for (int i = 0; i < MetaspaceShared::n_regions; i++) {
     _header->set_base_region_crc(i, base_info->region_crc(i));
   }
@@ -424,6 +436,16 @@ bool DynamicArchive::validate(FileMapInfo* dynamic_info) {
     return false;
   }
 
+#if INCLUDE_AGGRESSIVE_CDS
+  // Check the program crc
+  if (UseAggressiveCDS) {
+    if (dynamic_header->program_crc() != DynamicArchiveHeader::get_current_program_crc()) {
+      log_warning(cds)("Aggressive Dynamic archive cannot be used: program crc verification failed.");
+      return false;
+    }
+  }
+#endif // INCLUDE_AGGRESSIVE_CDS
+
   // Check each space's crc
   for (int i = 0; i < MetaspaceShared::n_regions; i++) {
     if (dynamic_header->base_region_crc(i) != base_info->region_crc(i)) {
@@ -435,10 +457,45 @@ bool DynamicArchive::validate(FileMapInfo* dynamic_info) {
   return true;
 }
 
+#if INCLUDE_AGGRESSIVE_CDS
+int DynamicArchiveHeader::get_current_program_crc() {
+  int cur_crc = 0;
+  const char* full_cmd = Arguments::java_command();
+  if (full_cmd == NULL) {
+    return 0;
+  }
+  const char* main_path = Arguments::get_appclasspath();
+  int main_path_len = strlen(main_path);
+  bool is_jar_file = strncmp(full_cmd, main_path, main_path_len) == 0;
+  if (is_jar_file) {
+    int fd = os::open(main_path, O_RDONLY | O_BINARY, 0);
+    assert(fd >= 0, "sanity");
+
+    uint32_t file_size = (uint32_t) os::lseek(fd, 0, SEEK_END);
+    os::lseek(fd, 0, SEEK_SET);
+    uint32_t max_size = 40 * 1024 * 1024; // 40M
+
+    ResourceMark rm;
+    char* buf = NEW_RESOURCE_ARRAY(char, max_size);
+
+    while(file_size) {
+      uint32_t size = MIN2(max_size, file_size);
+      size_t n = read(fd, buf, (unsigned int)size);
+      file_size -= n;
+      cur_crc = ClassLoader::crc32(cur_crc, buf, n);
+    }
+  }
+  return cur_crc;
+}
+#endif // INCLUDE_AGGRESSIVE_CDS
+
 void DynamicArchiveHeader::print(outputStream* st) {
   ResourceMark rm;
 
   st->print_cr("- base_header_crc:                0x%08x", base_header_crc());
+#if INCLUDE_AGGRESSIVE_CDS
+  st->print_cr("- program_crc:                    0x%08x", program_crc());
+#endif // INCLUDE_AGGRESSIVE_CDS
   for (int i = 0; i < NUM_CDS_REGIONS; i++) {
     st->print_cr("- base_region_crc[%d]:             0x%08x", i, base_region_crc(i));
   }

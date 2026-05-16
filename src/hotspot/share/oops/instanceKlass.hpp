@@ -1013,6 +1013,13 @@ public:
   void adjust_default_methods(bool* trace_name_printed);
 #endif // INCLUDE_JVMTI
 
+#if INCLUDE_AGGRESSIVE_CDS
+  inline address adr_fingerprint() const;
+  bool has_stored_fingerprint() const;
+  uint64_t get_stored_fingerprint() const;
+  void store_fingerprint(uint64_t fingerprint);
+#endif
+
   void clean_weak_instanceklass_links();
  private:
   void clean_implementors_list();

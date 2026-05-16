@@ -3518,6 +3518,44 @@ void Arguments::set_shared_spaces_flags_and_archive_paths() {
 
 #if INCLUDE_CDS
 // Sharing support
+
+static bool is_same_default_archive_path(const char* jvm_path, const char* archive_path, const char* name) {
+  stringStream path;
+  path.print("%s%s%s", jvm_path, os::file_separator(), name);
+  return os::same_files(path.base(), archive_path);
+}
+
+bool Arguments::is_default_archive_path(const char* archive_path) {
+  if (archive_path == nullptr) {
+    return false;
+  }
+
+  char jvm_path[JVM_MAXPATHLEN];
+  os::jvm_path(jvm_path, sizeof(jvm_path));
+  char *end = strrchr(jvm_path, *os::file_separator());
+  if (end != nullptr) *end = '\0';
+
+  if (is_same_default_archive_path(jvm_path, archive_path, "classes.jsa")) {
+    return true;
+  }
+
+#ifdef _LP64
+  if (is_same_default_archive_path(jvm_path, archive_path, "classes_nocoops.jsa")) {
+    return true;
+  }
+
+  if (is_same_default_archive_path(jvm_path, archive_path, "classes_coh.jsa")) {
+    return true;
+  }
+
+  if (is_same_default_archive_path(jvm_path, archive_path, "classes_nocoops_coh.jsa")) {
+    return true;
+  }
+#endif
+
+  return false;
+}
+
 // Construct the path to the archive
 char* Arguments::get_default_shared_archive_path() {
   if (_default_shared_archive_path == nullptr) {
@@ -3594,9 +3632,9 @@ void Arguments::init_shared_archive_paths() {
     }
     check_unsupported_dumping_properties();
 
-    if (os::same_files(get_default_shared_archive_path(), ArchiveClassesAtExit)) {
+    if (is_default_archive_path(ArchiveClassesAtExit)) {
       vm_exit_during_initialization(
-        "Cannot specify the default CDS archive for -XX:ArchiveClassesAtExit", get_default_shared_archive_path());
+        "Cannot specify the default CDS archive for -XX:ArchiveClassesAtExit", ArchiveClassesAtExit);
     }
   }
 
@@ -4168,6 +4206,11 @@ jint Arguments::apply_ergo() {
 
   set_shared_spaces_flags_and_archive_paths();
 
+#if INCLUDE_AGGRESSIVE_CDS
+  result = init_aggressive_cds_properties();
+  if (result != JNI_OK) return result;
+#endif // INCLUDE_AGGRESSIVE_CDS
+
   // Initialize Metaspace flags and alignments
   Metaspace::ergo_initialize();
 
@@ -4427,3 +4470,16 @@ bool Arguments::copy_expand_pid(const char* src, size_t srclen,
   *b = '\0';
   return (p == src_end); // return false if not all of the source was copied
 }
+
+#if INCLUDE_AGGRESSIVE_CDS
+
+jint Arguments::init_aggressive_cds_properties() {
+  if (!is_dumping_archive() && SharedDynamicArchivePath != nullptr && UseAggressiveCDS) {
+    bool added = false;
+    added = add_property("jdk.jbooster.aggressivecds.load=true", UnwriteableProperty, InternalProperty);
+    if (!added) return JNI_ENOMEM;
+  }
+  return JNI_OK;
+}
+
+#endif // INCLUDE_AGGRESSIVE_CDS

@@ -577,7 +577,7 @@ bool MetaspaceShared::may_be_eagerly_linked(InstanceKlass* ik) {
     // linked/verified at runtime.
     return false;
   }
-  if (DynamicDumpSharedSpaces && ik->is_shared_unregistered_class()) {
+  if (DynamicDumpSharedSpaces && ik->is_shared_unregistered_class() AGGRESSIVE_CDS_ONLY(&& !UseAggressiveCDS)) {
     // Linking of unregistered classes at this stage may cause more
     // classes to be resolved, resulting in calls to ClassLoader.loadClass()
     // that may not be expected by custom class loaders.

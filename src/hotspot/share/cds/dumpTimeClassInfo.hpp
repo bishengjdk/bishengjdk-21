@@ -80,6 +80,14 @@ class DumpTimeClassInfo: public CHeapObj<mtClass> {
     char loader_type2() { return _loader_type2; }
   };
 
+  #if INCLUDE_AGGRESSIVE_CDS
+  struct DTSharedData {
+    int length;
+    u1 data[1];
+    int obj_size() { return sizeof(length) + length; }
+  };
+#endif // INCLUDE_AGGRESSIVE_CDS
+
   class DTVerifierConstraint {
     Symbol* _name;
     Symbol* _from_name;
@@ -128,6 +136,11 @@ public:
   GrowableArray<char>*                 _verifier_constraint_flags;
   GrowableArray<DTLoaderConstraint>*   _loader_constraints;
   GrowableArray<int>*                  _enum_klass_static_fields;
+#if INCLUDE_AGGRESSIVE_CDS
+  DTSharedData*                        _shared_class_file;
+  DTSharedData*                        _url_string;
+  int64_t                               _classfile_timestamp;
+#endif // INCLUDE_AGGRESSIVE_CDS
 
   DumpTimeClassInfo() {
     _klass = nullptr;
@@ -144,6 +157,11 @@ public:
     _verifier_constraint_flags = nullptr;
     _loader_constraints = nullptr;
     _enum_klass_static_fields = nullptr;
+#if INCLUDE_AGGRESSIVE_CDS
+    _shared_class_file = nullptr;
+    _url_string = nullptr;
+    _classfile_timestamp = 0;
+#endif // INCLUDE_AGGRESSIVE_CDS
   }
   DumpTimeClassInfo& operator=(const DumpTimeClassInfo&) = delete;
   ~DumpTimeClassInfo();
@@ -211,6 +229,56 @@ public:
   void set_failed_verification()                    { _failed_verification = true; }
   InstanceKlass* nest_host() const                  { return _nest_host; }
   void set_nest_host(InstanceKlass* nest_host)      { _nest_host = nest_host; }
+
+#if INCLUDE_AGGRESSIVE_CDS
+  DTSharedData* shared_class_file() {
+    return _shared_class_file;
+  }
+
+  int shared_class_file_size() {
+    if (_shared_class_file != nullptr) {
+      return _shared_class_file->obj_size();
+    }
+    return 0;
+  }
+
+  void copy_shared_class_file(ClassFileStream* cfs);
+
+  void free_shared_class_file() {
+    if (_shared_class_file != nullptr) {
+      FREE_C_HEAP_ARRAY(u1, _shared_class_file);
+      _shared_class_file = nullptr;
+    }
+  }
+
+  DTSharedData* url_string() {
+    return _url_string;
+  }
+
+  int url_string_size() {
+    if (_url_string != nullptr) {
+      return _url_string->obj_size();
+    }
+    return 0;
+  }
+
+  void copy_url_string(char* string_value);
+
+  void free_url_string() {
+    if (_url_string != nullptr) {
+      FREE_C_HEAP_ARRAY(u1, _url_string);
+      _url_string = nullptr;
+    }
+  }
+
+  int64_t classfile_timestamp() {
+    return _classfile_timestamp;
+  }
+
+  void set_classfile_timestamp(int64_t classfile_timestamp) {
+    _classfile_timestamp = classfile_timestamp;
+  }
+#endif // INCLUDE_AGGRESSIVE_CDS
 
   size_t runtime_info_bytesize() const;
 };

@@ -5219,6 +5219,44 @@ void java_lang_InternalError::serialize_offsets(SerializeClosure* f) {
 }
 #endif
 
+#if INCLUDE_AGGRESSIVE_CDS
+int java_security_ProtectionDomain::_code_source_offset;
+
+oop java_security_ProtectionDomain::codeSource(oop protection_domain) {
+  return protection_domain->obj_field(_code_source_offset);
+}
+
+#define PROTECTIONDOMAIN_FIELDS_DO(macro) \
+  macro(_code_source_offset, k, "codesource", codesource_signature, false)
+
+void java_security_ProtectionDomain::compute_offsets() {
+  InstanceKlass* k = vmClasses::ProtectionDomain_klass();
+  PROTECTIONDOMAIN_FIELDS_DO(FIELD_COMPUTE_OFFSET);
+}
+
+void java_security_ProtectionDomain::serialize_offsets(SerializeClosure* f) {
+  PROTECTIONDOMAIN_FIELDS_DO(FIELD_SERIALIZE_OFFSET);
+}
+
+int java_security_CodeSource::_locationNoFragString_offset;
+
+oop java_security_CodeSource::locationNoFragString(oop code_source) {
+  return code_source->obj_field(_locationNoFragString_offset);
+}
+
+#define CODESOURCE_FIELDS_DO(macro) \
+  macro(_locationNoFragString_offset, k, "locationNoFragString", string_signature, false)
+
+void java_security_CodeSource::compute_offsets() {
+  InstanceKlass* k = vmClasses::CodeSource_klass();
+  CODESOURCE_FIELDS_DO(FIELD_COMPUTE_OFFSET);
+}
+
+void java_security_CodeSource::serialize_offsets(SerializeClosure* f) {
+  CODESOURCE_FIELDS_DO(FIELD_SERIALIZE_OFFSET);
+}
+#endif // INCLUDE_AGGRESSIVE_CDS
+
 #define BASIC_JAVA_CLASSES_DO_PART1(f) \
   f(java_lang_Class) \
   f(java_lang_String) \
@@ -5269,6 +5307,8 @@ void java_lang_InternalError::serialize_offsets(SerializeClosure* f) {
   f(jdk_internal_misc_UnsafeConstants) \
   f(java_lang_boxing_object) \
   f(vector_VectorPayload) \
+  AGGRESSIVE_CDS_ONLY(f(java_security_ProtectionDomain)) \
+  AGGRESSIVE_CDS_ONLY(f(java_security_CodeSource)) \
   //end
 
 #define BASIC_JAVA_CLASSES_DO(f) \

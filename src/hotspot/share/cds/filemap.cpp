@@ -193,7 +193,14 @@ void FileMapHeader::populate(FileMapInfo *info, size_t core_region_alignment,
   set_base_archive_name_offset((unsigned int)base_archive_name_offset);
   set_base_archive_name_size((unsigned int)base_archive_name_size);
   set_common_app_classpath_prefix_size((unsigned int)common_app_classpath_prefix_size);
-  set_magic(DynamicDumpSharedSpaces ? CDS_DYNAMIC_ARCHIVE_MAGIC : CDS_ARCHIVE_MAGIC);
+#if INCLUDE_AGGRESSIVE_CDS
+  if (UseAggressiveCDS && DynamicDumpSharedSpaces) {
+    set_magic(CDS_AGGRESSIVE_ARCHIVE_MAGIC);
+  } else
+#endif // INCLUDE_AGGRESSIVE_CDS
+  {
+    set_magic(DynamicDumpSharedSpaces ? CDS_DYNAMIC_ARCHIVE_MAGIC : CDS_ARCHIVE_MAGIC);
+  }
   set_version(CURRENT_CDS_ARCHIVE_VERSION);
 
   if (!info->is_static() && base_archive_name_size != 0) {
@@ -402,14 +409,16 @@ bool SharedClassPathEntry::validate(bool is_class_path) const {
   bool ok = true;
   log_info(class, path)("checking shared classpath entry: %s", name);
   if (os::stat(name, &st) != 0 && is_class_path) {
-    // If the archived module path entry does not exist at runtime, it is not fatal
-    // (no need to invalid the shared archive) because the shared runtime visibility check
-    // filters out any archived module classes that do not have a matching runtime
-    // module path location.
-    log_warning(cds)("Required classpath entry does not exist: %s", name);
-    ok = false;
+    if (!SkipSharedClassPathCheck) {
+      // If the archived module path entry does not exist at runtime, it is not fatal
+      // (no need to invalid the shared archive) because the shared runtime visibility check
+      // filters out any archived module classes that do not have a matching runtime
+      // module path location.
+      log_warning(cds)("Required classpath entry does not exist: %s", name);
+      ok = false;
+    }
   } else if (is_dir()) {
-    if (!os::dir_is_empty(name)) {
+    if (!SkipSharedClassPathCheck && !os::dir_is_empty(name)) {
       log_warning(cds)("directory is not empty: %s", name);
       ok = false;
     }
@@ -528,6 +537,10 @@ int FileMapInfo::add_shared_classpaths(int i, const char* which, ClassPathEntry 
 }
 
 void FileMapInfo::check_nonempty_dir_in_shared_path_table() {
+  if (SkipSharedClassPathCheck) {
+    return;
+  }
+
   Arguments::assert_is_dumping_archive();
 
   bool has_nonempty_dir = false;
@@ -592,7 +605,7 @@ int FileMapInfo::get_module_shared_path_index(Symbol* location) {
   const char* file = ClassLoader::uri_to_path(location->as_C_string());
   for (int i = ClassLoaderExt::app_module_paths_start_index(); i < get_number_of_shared_paths(); i++) {
     SharedClassPathEntry* ent = shared_path(i);
-    assert(ent->in_named_module(), "must be");
+    assert(ent->in_named_module() || SkipSharedClassPathCheck, "must be");
     bool cond = strcmp(file, ent->name()) == 0;
     log_debug(class, path)("get_module_shared_path_index (%d) %s : %s = %s", i,
                            location->as_C_string(), ent->name(), cond ? "same" : "different");
@@ -863,6 +876,9 @@ bool FileMapInfo::validate_boot_class_paths() {
 }
 
 bool FileMapInfo::validate_app_class_paths(int shared_app_paths_len) {
+  if (SkipSharedClassPathCheck) {
+    return true;
+  }
   const char *appcp = Arguments::get_appclasspath();
   assert(appcp != nullptr, "null app classpath");
   int rp_len = num_paths(appcp);
@@ -1118,7 +1134,8 @@ public:
     }
 
     if (gen_header._magic != CDS_ARCHIVE_MAGIC &&
-        gen_header._magic != CDS_DYNAMIC_ARCHIVE_MAGIC) {
+        gen_header._magic != CDS_DYNAMIC_ARCHIVE_MAGIC
+        AGGRESSIVE_CDS_ONLY(&& gen_header._magic != CDS_AGGRESSIVE_ARCHIVE_MAGIC)) {
       log_warning(cds)("The shared archive file has a bad magic number: %#x", gen_header._magic);
       return false;
     }
@@ -1208,7 +1225,8 @@ public:
         return false;
       }
     } else {
-      assert(_header->_magic == CDS_DYNAMIC_ARCHIVE_MAGIC, "must be");
+      assert(_header->_magic == CDS_DYNAMIC_ARCHIVE_MAGIC
+             AGGRESSIVE_CDS_ONLY(|| _header->_magic == CDS_AGGRESSIVE_ARCHIVE_MAGIC), "must be");
       if ((name_size == 0 && name_offset != 0) ||
           (name_size != 0 && name_offset == 0)) {
         // If either is zero, both must be zero. This indicates that we are using the default base archive.
@@ -1256,7 +1274,8 @@ bool FileMapInfo::get_base_archive_name_from_header(const char* archive_name,
     return false;
   }
   GenericCDSFileMapHeader* header = file_helper.get_generic_file_header();
-  if (header->_magic != CDS_DYNAMIC_ARCHIVE_MAGIC) {
+  if (header->_magic != CDS_DYNAMIC_ARCHIVE_MAGIC
+      AGGRESSIVE_CDS_ONLY(&& header->_magic != CDS_AGGRESSIVE_ARCHIVE_MAGIC)) {
     assert(header->_magic == CDS_ARCHIVE_MAGIC, "must be");
     if (AutoCreateSharedArchive) {
      log_warning(cds)("AutoCreateSharedArchive is ignored because %s is a static archive", archive_name);
@@ -1290,7 +1309,8 @@ bool FileMapInfo::init_from_file(int fd) {
       return false;
     }
   } else {
-    if (gen_header->_magic != CDS_DYNAMIC_ARCHIVE_MAGIC) {
+    if (gen_header->_magic != CDS_DYNAMIC_ARCHIVE_MAGIC
+        AGGRESSIVE_CDS_ONLY(&& gen_header->_magic != CDS_AGGRESSIVE_ARCHIVE_MAGIC)) {
       log_warning(cds)("Not a top shared archive: %s", _full_path);
       return false;
     }
@@ -2467,7 +2487,7 @@ ClassPathEntry* FileMapInfo::get_classpath_entry_for_jvmti(int i, TRAPS) {
   ClassPathEntry* ent = _classpath_entries_for_jvmti[i];
   if (ent == nullptr) {
     SharedClassPathEntry* scpe = shared_path(i);
-    assert(scpe->is_jar(), "must be"); // other types of scpe will not produce archived classes
+    assert(scpe->is_jar() || SkipSharedClassPathCheck, "must be"); // other types of scpe will not produce archived classes
 
     const char* path = scpe->name();
     struct stat st;
