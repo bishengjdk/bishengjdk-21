@@ -1089,6 +1089,8 @@ static void match_alias_type(Compile* C, Node* n, Node* m) {
     case Op_StrCompressedCopy:
     case Op_OnSpinWait:
     case Op_EncodeISOArray:
+    case Op_EncodeUtf8FromUtf16:
+    case Op_DecodeUtf8ToUtf16:
       nidx = Compile::AliasIdxTop;
       nat = nullptr;
       break;
@@ -2267,6 +2269,8 @@ bool Matcher::find_shared_visit(MStack& mstack, Node* n, uint opcode, bool& mem_
     case Op_StrInflatedCopy:
     case Op_StrCompressedCopy:
     case Op_EncodeISOArray:
+    case Op_EncodeUtf8FromUtf16:
+    case Op_DecodeUtf8ToUtf16:
     case Op_FmaD:
     case Op_FmaF:
     case Op_FmaVD:
@@ -2430,6 +2434,8 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       break;
     }
     case Op_EncodeISOArray:
+    case Op_EncodeUtf8FromUtf16:
+    case Op_DecodeUtf8ToUtf16:
     case Op_StrCompressedCopy:
     case Op_StrInflatedCopy: {
       // Restructure into a binary tree for Matching.
