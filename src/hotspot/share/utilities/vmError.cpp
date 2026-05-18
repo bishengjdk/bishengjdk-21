@@ -1341,7 +1341,7 @@ void VMError::report(outputStream* st, bool _verbose) {
     os::print_signal_handlers(st, buf, sizeof(buf));
     st->cr();
 
-  STEP_IF("Native Memory Tracking", _verbose)
+  STEP_IF("Native Memory Tracking", _verbose && _thread != nullptr)
     MemTracker::error_report(st);
     st->cr();
 
