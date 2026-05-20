@@ -571,6 +571,9 @@ public:
 // Check if we can eagerly link this class at dump time, so we can avoid the
 // runtime linking overhead (especially verification)
 bool MetaspaceShared::may_be_eagerly_linked(InstanceKlass* ik) {
+  if (!ik->is_loaded()) {
+    return false;
+  }
   if (!ik->can_be_verified_at_dumptime()) {
     // For old classes, try to leave them in the unlinked state, so
     // we can still store them in the archive. They must be

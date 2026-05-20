@@ -1309,8 +1309,15 @@ bool FileMapInfo::init_from_file(int fd) {
       return false;
     }
   } else {
-    if (gen_header->_magic != CDS_DYNAMIC_ARCHIVE_MAGIC
-        AGGRESSIVE_CDS_ONLY(&& gen_header->_magic != CDS_AGGRESSIVE_ARCHIVE_MAGIC)) {
+    unsigned int expected_dynamic_magic = CDS_DYNAMIC_ARCHIVE_MAGIC;
+#if INCLUDE_AGGRESSIVE_CDS
+    if (UseAggressiveCDS) {
+      expected_dynamic_magic = CDS_AGGRESSIVE_ARCHIVE_MAGIC;
+    }
+#endif
+    if (gen_header->_magic != expected_dynamic_magic) {
+      log_warning(cds)("Bad magic number: expected 0x%08x, actual 0x%08x.",
+                       expected_dynamic_magic, gen_header->_magic);
       log_warning(cds)("Not a top shared archive: %s", _full_path);
       return false;
     }

@@ -465,26 +465,38 @@ int DynamicArchiveHeader::get_current_program_crc() {
     return 0;
   }
   const char* main_path = Arguments::get_appclasspath();
-  int main_path_len = strlen(main_path);
-  bool is_jar_file = strncmp(full_cmd, main_path, main_path_len) == 0;
-  if (is_jar_file) {
-    int fd = os::open(main_path, O_RDONLY | O_BINARY, 0);
-    assert(fd >= 0, "sanity");
-
-    uint32_t file_size = (uint32_t) os::lseek(fd, 0, SEEK_END);
-    os::lseek(fd, 0, SEEK_SET);
-    uint32_t max_size = 40 * 1024 * 1024; // 40M
-
-    ResourceMark rm;
-    char* buf = NEW_RESOURCE_ARRAY(char, max_size);
-
-    while(file_size) {
-      uint32_t size = MIN2(max_size, file_size);
-      size_t n = read(fd, buf, (unsigned int)size);
-      file_size -= n;
-      cur_crc = ClassLoader::crc32(cur_crc, buf, n);
-    }
+  if (main_path == NULL || main_path[0] == '\0') {
+    // No appclasspath (e.g. -m / --module main, or no -cp specified) - nothing to CRC.
+    return 0;
   }
+  int main_path_len = (int) strlen(main_path);
+  bool is_jar_file = strncmp(full_cmd, main_path, main_path_len) == 0;
+  if (!is_jar_file) {
+    return 0;
+  }
+
+  int fd = os::open(main_path, O_RDONLY | O_BINARY, 0);
+  if (fd < 0) {
+    return 0;
+  }
+
+  uint32_t file_size = (uint32_t) os::lseek(fd, 0, SEEK_END);
+  os::lseek(fd, 0, SEEK_SET);
+  uint32_t max_size = 40 * 1024 * 1024; // 40M
+
+  ResourceMark rm;
+  char* buf = NEW_RESOURCE_ARRAY(char, max_size);
+
+  while (file_size) {
+    uint32_t size = MIN2(max_size, file_size);
+    ssize_t n = read(fd, buf, (unsigned int)size);
+    if (n <= 0) {
+      break;
+    }
+    file_size -= (uint32_t) n;
+    cur_crc = ClassLoader::crc32(cur_crc, buf, (int) n);
+  }
+  ::close(fd);
   return cur_crc;
 }
 #endif // INCLUDE_AGGRESSIVE_CDS

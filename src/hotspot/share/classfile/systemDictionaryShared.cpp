@@ -96,6 +96,17 @@ InstanceKlass* SystemDictionaryShared::load_shared_class_for_builtin_loader(
         (SystemDictionary::is_platform_class_loader(class_loader()) && ik->is_shared_platform_class())) {
       SharedClassLoadingMark slm(THREAD, ik);
       PackageEntry* pkg_entry = CDSProtectionDomain::get_package_entry_from_class(ik, class_loader);
+      if (pkg_entry == nullptr) {
+        int index = ik->shared_classpath_index();
+        assert(index >= 0, "Sanity");
+        SharedClassPathEntry* ent = FileMapInfo::shared_path(index);
+        if (ent->is_modules_image()) {
+          // Classes from the modules image need a PackageEntry to find the
+          // ModuleEntry used for their archived ProtectionDomain. If this
+          // loader has not defined the package yet, use normal class loading.
+          return nullptr;
+        }
+      }
       Handle protection_domain =
         CDSProtectionDomain::init_security_info(class_loader, ik, pkg_entry, CHECK_NULL);
       return load_shared_class(ik, class_loader, protection_domain, nullptr, pkg_entry, THREAD);
