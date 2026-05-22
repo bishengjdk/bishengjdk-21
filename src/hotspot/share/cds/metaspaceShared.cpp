@@ -571,13 +571,16 @@ public:
 // Check if we can eagerly link this class at dump time, so we can avoid the
 // runtime linking overhead (especially verification)
 bool MetaspaceShared::may_be_eagerly_linked(InstanceKlass* ik) {
+  if (!ik->is_loaded()) {
+    return false;
+  }
   if (!ik->can_be_verified_at_dumptime()) {
     // For old classes, try to leave them in the unlinked state, so
     // we can still store them in the archive. They must be
     // linked/verified at runtime.
     return false;
   }
-  if (DynamicDumpSharedSpaces && ik->is_shared_unregistered_class()) {
+  if (DynamicDumpSharedSpaces && ik->is_shared_unregistered_class() AGGRESSIVE_CDS_ONLY(&& !UseAggressiveCDS)) {
     // Linking of unregistered classes at this stage may cause more
     // classes to be resolved, resulting in calls to ClassLoader.loadClass()
     // that may not be expected by custom class loaders.
@@ -815,8 +818,10 @@ bool MetaspaceShared::try_link_class(JavaThread* current, InstanceKlass* ik) {
       CLEAR_PENDING_EXCEPTION;
       SystemDictionaryShared::set_class_has_failed_verification(ik);
       _has_error_classes = true;
+    } else {
+      assert(!SystemDictionaryShared::has_class_failed_verification(ik), "sanity");
+      ik->compute_has_loops_flag_for_methods();
     }
-    ik->compute_has_loops_flag_for_methods();
     BytecodeVerificationLocal = saved;
     return true;
   } else {

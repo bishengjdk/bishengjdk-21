@@ -69,7 +69,20 @@ public:
     int _root_indices[1];
   };
 
+#if INCLUDE_AGGRESSIVE_CDS
+  struct RTSharedData {
+    int length;
+    u1 data[1];
+    int obj_size() { return sizeof(length) + length; }
+  };
+#endif // INCLUDE_AGGRESSIVE_CDS
+
   InstanceKlass* _klass;
+#if INCLUDE_AGGRESSIVE_CDS
+  RTSharedData* _shared_class_file;
+  RTSharedData* _url_string;
+  int64_t       _classfile_timestamp;
+#endif // INCLUDE_AGGRESSIVE_CDS
   int _num_verifier_constraints;
   int _num_loader_constraints;
 
@@ -106,6 +119,12 @@ private:
     }
   }
 
+#if INCLUDE_AGGRESSIVE_CDS
+  static size_t shared_class_file_size(DumpTimeClassInfo& info) {
+    return info.shared_class_file_size();
+  }
+#endif // INCLUDE_AGGRESSIVE_CDS
+
   static size_t crc_size(InstanceKlass* klass);
 public:
   static size_t byte_size(InstanceKlass* klass, int num_verifier_constraints, int num_loader_constraints,
@@ -118,6 +137,24 @@ public:
            verifier_constraint_flags_size(num_verifier_constraints) +
            enum_klass_static_fields_size(num_enum_klass_static_fields);
   }
+
+#if INCLUDE_AGGRESSIVE_CDS
+  static size_t byte_size(DumpTimeClassInfo& info) {
+    size_t previous_size = byte_size(info._klass, info.num_verifier_constraints(), info.num_loader_constraints(),
+                                     info.num_enum_klass_static_fields());
+    if (UseAggressiveCDS) {
+      size_t cf_size = shared_class_file_size(info);
+      if (cf_size != 0) {
+        previous_size = align_up(previous_size, sizeof(int)) + cf_size;
+      }
+      cf_size = info.url_string_size();
+      if (cf_size != 0) {
+        return align_up(previous_size, sizeof(int)) + cf_size;
+      }
+    }
+    return previous_size;
+  }
+#endif // INCLUDE_AGGRESSIVE_CDS
 
 private:
   size_t crc_offset() const {
@@ -140,6 +177,19 @@ private:
   size_t enum_klass_static_fields_offset() const {
     return verifier_constraint_flags_offset() + verifier_constraint_flags_size(_num_verifier_constraints);
   }
+
+#if INCLUDE_AGGRESSIVE_CDS
+  size_t shared_class_file_offset() const {
+    return align_up(enum_klass_static_fields_offset(), sizeof(int));
+  }
+  size_t url_string_offset() const {
+    size_t offset = shared_class_file_offset();
+    if (_shared_class_file != nullptr) {
+      return align_up(offset + _shared_class_file->obj_size(), sizeof(int));
+    }
+    return offset;
+  }
+#endif // INCLUDE_AGGRESSIVE_CDS
 
   void check_verifier_constraint_offset(int i) const {
     assert(0 <= i && i < _num_verifier_constraints, "sanity");
@@ -190,6 +240,28 @@ public:
     check_loader_constraint_offset(i);
     return loader_constraints() + i;
   }
+
+#if INCLUDE_AGGRESSIVE_CDS
+  RTSharedData* shared_class_file() {
+    return (RTSharedData*)(address(this) + shared_class_file_offset());
+  }
+  RTSharedData* url_string() {
+    return (RTSharedData*)(address(this) + url_string_offset());
+  }
+
+  int64_t classfile_timestamp() {
+    return _classfile_timestamp;
+  }
+
+  void set_classfile_timestamp(int64_t classfile_timestamp) {
+    _classfile_timestamp = classfile_timestamp;
+  }
+
+  ClassFileStream* get_shared_class_file_stream();
+
+  bool check_classfile_timestamp(char* url_string, TRAPS);
+  Handle get_protection_domain(Handle class_loader, TRAPS);
+#endif // INCLUDE_AGGRESSIVE_CDS
 
   void init(DumpTimeClassInfo& info);
 

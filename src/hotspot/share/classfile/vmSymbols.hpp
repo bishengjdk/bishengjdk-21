@@ -470,6 +470,7 @@
   template(cache_field_name,                          "cache")                                    \
   template(value_name,                                "value")                                    \
   template(compact_strings_name,                      "COMPACT_STRINGS")                          \
+  template(utf_conversion_intrinsics_name,            "UTF_CONVERSION_INTRINSICS")                \
   template(numberOfLeadingZeros_name,                 "numberOfLeadingZeros")                     \
   template(numberOfTrailingZeros_name,                "numberOfTrailingZeros")                    \
   template(bitCount_name,                             "bitCount")                                 \
@@ -785,6 +786,9 @@
   template(toFileURL_name,                                  "toFileURL")                                          \
   template(toFileURL_signature,                             "(Ljava/lang/String;)Ljava/net/URL;")                 \
   template(url_void_signature,                              "(Ljava/net/URL;)V")                                  \
+  template(codesource_signature,                            "Ljava/security/CodeSource;")                         \
+  template(getProtectionDomainByURLString_name,             "getProtectionDomainByURLString")                     \
+  template(getProtectionDomainByURLString_signature,        "(Ljava/lang/String;)Ljava/security/ProtectionDomain;") \
                                                                                                                   \
   /* ElasticMaxDirectMemory */                                                                                    \
   template(java_nio_Bits,                          "java/nio/Bits")                                               \

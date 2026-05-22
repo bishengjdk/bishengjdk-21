@@ -41,6 +41,9 @@ CDSConst CDSConstants::offsets[] = {
   { "FileMapHeader::_common_app_classpath_prefix_size",   offset_of(FileMapHeader, _common_app_classpath_prefix_size)   },
   { "CDSFileMapRegion::_crc",                             offset_of(CDSFileMapRegion, _crc)                             },
   { "CDSFileMapRegion::_used",                            offset_of(CDSFileMapRegion, _used)                            },
+#if INCLUDE_AGGRESSIVE_CDS
+  { "DynamicArchiveHeader::_program_crc",                 offset_of(DynamicArchiveHeader, _program_crc)                 },
+#endif // INCLUDE_AGGRESSIVE_CDS
   { "DynamicArchiveHeader::_base_region_crc",             offset_of(DynamicArchiveHeader, _base_region_crc)             }
 };
 

@@ -104,6 +104,8 @@ define_pd_global(intx, InlineSmallCode,          1000);
           "Avoid generating unaligned memory accesses")                 \
   product(bool, UseLSE, false,                                          \
           "Use LSE instructions")                                       \
+  product(bool, UseLSEPrefetch, false,                                  \
+          "Prefetch before lock-related LSE instructions (CAS)")        \
   product(uint, UseSVE, 0,                                              \
           "Highest supported SVE instruction set version")              \
           range(0, 2)                                                   \
@@ -201,7 +203,7 @@ define_pd_global(intx, InlineSmallCode,          1000);
   product(bool, LogNUMANodes, false,                                    \
           "Print NUMANodes")                                            \
                                                                         \
-  product(ccstr, NUMANodes, NULL,                                       \
+  product(ccstr, NUMANodes, nullptr,                                    \
           "This parameter provides the same functionality as"           \
           "'numactl --all -N <nodes> -m <nodes>'."                      \
           "<nodes> can be '0-2', '0,1,2', 'all' and so on.")            \
@@ -214,11 +216,18 @@ define_pd_global(intx, InlineSmallCode,          1000);
   product(intx, NUMAMemNodesRandom, 0,                                  \
           "Number of continuous nodes to bind to memory"                \
           "with the first N nodes chosen by NUMANodesRandom.")          \
-  product(ccstr, NUMABindPolicy, NULL,                                  \
+  product(ccstr, NUMABindPolicy, nullptr,                               \
           "Enable deterministic NUMA placement with combined Options,"  \
           "including prefix=<id> and div=<N>.")                         \
   product(bool, UseStlrForRelease, false,                               \
           "Use stlr instead of dmb ish + str for release stores")       \
+  product(bool, UseUTFConversionIntrinsics, false,                      \
+          "Use Intrinsics for conversion between UTF8 and UTF16")       \
+  product(ccstr, AutoSharedArchivePath, nullptr,                        \
+          "Auto enable the AppCDS feature"                              \
+          "the path save classlist and jsa file")                       \
+  product(bool, PrintAutoAppCDS, false,                                 \
+          "Print path and some information about AutoSharedArchivePath")\
 
 // end of ARCH_FLAGS
 

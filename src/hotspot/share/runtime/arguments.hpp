@@ -500,6 +500,7 @@ class Arguments : AllStatic {
   static void  fix_appclasspath();
 
   static char* get_default_shared_archive_path() NOT_CDS_RETURN_(nullptr);
+  static bool  is_default_archive_path(const char* archive_path) NOT_CDS_RETURN_(false);
   static void  init_shared_archive_paths() NOT_CDS_RETURN;
 
   // Operation modi
@@ -528,6 +529,10 @@ class Arguments : AllStatic {
   static void assert_is_dumping_archive() {
     assert(Arguments::is_dumping_archive(), "dump time only");
   }
+
+#if INCLUDE_AGGRESSIVE_CDS
+  static jint init_aggressive_cds_properties();
+#endif // INCLUDE_AGGRESSIVE_CDS
 
   DEBUG_ONLY(static bool verify_special_jvm_flags(bool check_globals);)
 };

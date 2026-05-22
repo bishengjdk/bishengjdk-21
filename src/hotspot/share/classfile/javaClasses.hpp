@@ -101,6 +101,10 @@ class java_lang_String : AllStatic {
 
   static void set_compact_strings(bool value);
 
+#ifdef AARCH64
+  static void set_utf_conversion_intrinsics(bool value);
+#endif // AARCH64
+
   static int value_offset() { CHECK_INIT(_value_offset); }
   static int coder_offset() { CHECK_INIT(_coder_offset); }
 
@@ -1835,6 +1839,32 @@ class java_lang_InternalError : AllStatic {
   static void compute_offsets();
   static void serialize_offsets(SerializeClosure* f) NOT_CDS_RETURN;
 };
+
+#if INCLUDE_AGGRESSIVE_CDS
+class java_security_ProtectionDomain : AllStatic {
+ private:
+  static int _code_source_offset;
+
+ public:
+  static void compute_offsets();
+
+  static void serialize_offsets(SerializeClosure* f);
+
+  static oop  codeSource(oop protection_domain);
+};
+
+class java_security_CodeSource : AllStatic {
+ private:
+  static int _locationNoFragString_offset;
+
+ public:
+  static void compute_offsets();
+
+  static void serialize_offsets(SerializeClosure* f);
+
+  static oop locationNoFragString(oop code_source);
+};
+#endif // INCLUDE_AGGRESSIVE_CDS
 
 // Use to declare fields that need to be injected into Java classes
 // for the JVM to use.  The name_index and signature_index are

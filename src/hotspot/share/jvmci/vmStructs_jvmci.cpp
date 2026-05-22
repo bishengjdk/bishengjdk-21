@@ -859,6 +859,8 @@
   static_field(VM_Version, _zva_length, int)                            \
   static_field(StubRoutines::aarch64, _count_positives, address)        \
   static_field(StubRoutines::aarch64, _count_positives_long, address)   \
+  static_field(StubRoutines::aarch64, _convert_masked_utf8_to_utf16, address) \
+  static_field(StubRoutines::aarch64, _scalar_convert_utf8_to_utf16, address) \
   static_field(VM_Version, _rop_protection, bool)                       \
   volatile_nonstatic_field(JavaFrameAnchor, _last_Java_fp, intptr_t*)
 

@@ -66,6 +66,21 @@ inline InstanceKlass* volatile* InstanceKlass::adr_implementor() const {
   }
 }
 
+#if INCLUDE_AGGRESSIVE_CDS
+inline address InstanceKlass::adr_fingerprint() const {
+  if (has_stored_fingerprint()) {
+    InstanceKlass* volatile* adr_impl = adr_implementor();
+    if (adr_impl != nullptr) {
+      return (address)(adr_impl + 1);
+    } else {
+      return (address)end_of_nonstatic_oop_maps();
+    }
+  } else {
+    return nullptr;
+  }
+}
+#endif
+
 inline ObjArrayKlass* InstanceKlass::array_klasses_acquire() const {
   return Atomic::load_acquire(&_array_klasses);
 }

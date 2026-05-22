@@ -262,6 +262,30 @@ void java_lang_String::set_compact_strings(bool value) {
   vmClasses::String_klass()->do_local_static_fields(&fix);
 }
 
+#ifdef AARCH64
+class UTFConversionIntrinsicsFixup : public FieldClosure {
+private:
+  bool _value;
+
+public:
+  UTFConversionIntrinsicsFixup(bool value) : _value(value) {}
+
+  void do_field(fieldDescriptor* fd) {
+    if (fd->name() == vmSymbols::utf_conversion_intrinsics_name()) {
+      oop mirror = fd->field_holder()->java_mirror();
+      assert(fd->field_holder() == vmClasses::String_klass(), "Should be String");
+      assert(mirror != NULL, "String must have mirror already");
+      mirror->bool_field_put(fd->offset(), _value);
+    }
+  }
+};
+
+void java_lang_String::set_utf_conversion_intrinsics(bool value) {
+  UTFConversionIntrinsicsFixup fix(value);
+  vmClasses::String_klass()->do_local_static_fields(&fix);
+}
+#endif // AARCH64
+
 Handle java_lang_String::basic_create(int length, bool is_latin1, TRAPS) {
   assert(_initialized, "Must be initialized");
   assert(CompactStrings || !is_latin1, "Must be UTF16 without CompactStrings");
@@ -5195,6 +5219,44 @@ void java_lang_InternalError::serialize_offsets(SerializeClosure* f) {
 }
 #endif
 
+#if INCLUDE_AGGRESSIVE_CDS
+int java_security_ProtectionDomain::_code_source_offset;
+
+oop java_security_ProtectionDomain::codeSource(oop protection_domain) {
+  return protection_domain->obj_field(_code_source_offset);
+}
+
+#define PROTECTIONDOMAIN_FIELDS_DO(macro) \
+  macro(_code_source_offset, k, "codesource", codesource_signature, false)
+
+void java_security_ProtectionDomain::compute_offsets() {
+  InstanceKlass* k = vmClasses::ProtectionDomain_klass();
+  PROTECTIONDOMAIN_FIELDS_DO(FIELD_COMPUTE_OFFSET);
+}
+
+void java_security_ProtectionDomain::serialize_offsets(SerializeClosure* f) {
+  PROTECTIONDOMAIN_FIELDS_DO(FIELD_SERIALIZE_OFFSET);
+}
+
+int java_security_CodeSource::_locationNoFragString_offset;
+
+oop java_security_CodeSource::locationNoFragString(oop code_source) {
+  return code_source->obj_field(_locationNoFragString_offset);
+}
+
+#define CODESOURCE_FIELDS_DO(macro) \
+  macro(_locationNoFragString_offset, k, "locationNoFragString", string_signature, false)
+
+void java_security_CodeSource::compute_offsets() {
+  InstanceKlass* k = vmClasses::CodeSource_klass();
+  CODESOURCE_FIELDS_DO(FIELD_COMPUTE_OFFSET);
+}
+
+void java_security_CodeSource::serialize_offsets(SerializeClosure* f) {
+  CODESOURCE_FIELDS_DO(FIELD_SERIALIZE_OFFSET);
+}
+#endif // INCLUDE_AGGRESSIVE_CDS
+
 #define BASIC_JAVA_CLASSES_DO_PART1(f) \
   f(java_lang_Class) \
   f(java_lang_String) \
@@ -5245,6 +5307,8 @@ void java_lang_InternalError::serialize_offsets(SerializeClosure* f) {
   f(jdk_internal_misc_UnsafeConstants) \
   f(java_lang_boxing_object) \
   f(vector_VectorPayload) \
+  AGGRESSIVE_CDS_ONLY(f(java_security_ProtectionDomain)) \
+  AGGRESSIVE_CDS_ONLY(f(java_security_CodeSource)) \
   //end
 
 #define BASIC_JAVA_CLASSES_DO(f) \

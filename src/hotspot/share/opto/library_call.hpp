@@ -313,6 +313,8 @@ class LibraryCallKit : public GraphKit {
   Node* get_block_size_from_digest_object(Node *digestBase_object);
   Node* inline_digestBase_implCompressMB_predicate(int predicate);
   bool inline_encodeISOArray(bool ascii);
+  bool inline_decodeUtf8ToUtf16();
+  bool inline_encodeUtf8FromUtf16();
   bool inline_updateCRC32();
   bool inline_updateBytesCRC32();
   bool inline_updateByteBufferCRC32();

@@ -40,6 +40,9 @@
 #if INCLUDE_JFR
 #include "jfr/support/jfrKlassExtension.hpp"
 #endif
+#if INCLUDE_AGGRESSIVE_CDS
+#include "classfile/systemDictionaryShared.hpp"
+#endif // INCLUDE_AGGRESSIVE_CDS
 
 
 // called during initial loading of a shared class
@@ -58,7 +61,18 @@ InstanceKlass* KlassFactory::check_shared_class_file_load_hook(
     // Post the CFLH
     JvmtiCachedClassFileData* cached_class_file = nullptr;
     if (cfs == nullptr) {
-      cfs = FileMapInfo::open_stream_for_jvmti(ik, class_loader, CHECK_NULL);
+#if INCLUDE_AGGRESSIVE_CDS
+      if (UseAggressiveCDS && !SystemDictionaryShared::is_builtin(ik)) {
+        assert(UseAggressiveCDS, "sanity check");
+        cfs = SystemDictionaryShared::get_shared_class_file_stream(ik);
+        if (cfs == nullptr) {
+          cfs = SystemDictionaryShared::get_byte_code_from_cache(class_name, class_loader, CHECK_NULL);
+        }
+      } else
+#endif // INCLUDE_AGGRESSIVE_CDS
+      {
+        cfs = FileMapInfo::open_stream_for_jvmti(ik, class_loader, CHECK_NULL);
+      }
     }
     unsigned char* ptr = (unsigned char*)cfs->buffer();
     unsigned char* end_ptr = ptr + cfs->length();
@@ -69,7 +83,7 @@ InstanceKlass* KlassFactory::check_shared_class_file_load_hook(
                                            &ptr,
                                            &end_ptr,
                                            &cached_class_file);
-    if (old_ptr != ptr) {
+    if (old_ptr != ptr AGGRESSIVE_CDS_ONLY(|| (UseAggressiveCDS && !SystemDictionaryShared::is_builtin(ik)))) {
       // JVMTI agent has modified class file data.
       // Set new class file stream using JVMTI agent modified class file data.
       ClassLoaderData* loader_data =
@@ -79,6 +93,19 @@ InstanceKlass* KlassFactory::check_shared_class_file_load_hook(
                                                     end_ptr - ptr,
                                                     cfs->source(),
                                                     ClassFileStream::verify);
+#if INCLUDE_AGGRESSIVE_CDS
+      if (UseAggressiveCDS) {
+        int stream_size  = stream->length();
+        int stream_crc32 = ClassLoader::crc32(0, (const char*)stream->buffer(), stream->length());
+        uint64_t fingerprint = (uint64_t(stream_size) << 32) | uint64_t(uint32_t(stream_crc32));
+        if (ik->get_stored_fingerprint() == fingerprint) {
+          if (cached_class_file != nullptr) {
+            ik->set_cached_class_file(cached_class_file);
+          }
+          return nullptr;
+        }
+      }
+#endif // INCLUDE_AGGRESSIVE_CDS
       ClassLoadInfo cl_info(protection_domain);
       ClassFileParser parser(stream,
                              class_name,
@@ -97,6 +124,7 @@ InstanceKlass* KlassFactory::check_shared_class_file_load_hook(
 
       if (class_loader.is_null()) {
         new_ik->set_classpath_index(path_index);
+        new_ik->assign_class_loader_type();
       }
 
       return new_ik;
@@ -214,6 +242,28 @@ InstanceKlass* KlassFactory::create_from_stream(ClassFileStream* stream,
 #if INCLUDE_CDS
   if (Arguments::is_dumping_archive()) {
     ClassLoader::record_result(THREAD, result, stream, old_stream != stream);
+#if INCLUDE_AGGRESSIVE_CDS
+    if (UseAggressiveCDS && !loader_data->is_builtin_class_loader_data()) {
+      bool changed_by_loadhook = old_stream != stream;
+      if (changed_by_loadhook && !cl_info.is_hidden()) {
+        SystemDictionaryShared::set_shared_class_file(result, old_stream);
+      }
+      Handle protection_domain = cl_info.protection_domain();
+      if (protection_domain.not_null()) {
+        Handle codesource(THREAD, java_security_ProtectionDomain::codeSource(protection_domain()));
+        if (codesource.not_null()) {
+          Handle str(THREAD, java_security_CodeSource::locationNoFragString(codesource()));
+          if (str.not_null()) {
+            char* string_value = java_lang_String::as_utf8_string(str());
+            if (strlen(string_value) != 0) {
+              SystemDictionaryShared::set_url_string(result, string_value);
+              SystemDictionaryShared::save_timestamp(result, string_value);
+            }
+          }
+        }
+      }
+    }
+#endif // INCLUDE_AGGRESSIVE_CDS
   }
 #endif // INCLUDE_CDS
 

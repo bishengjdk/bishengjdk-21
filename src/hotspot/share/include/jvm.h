@@ -1203,6 +1203,11 @@ typedef struct JDK1_1InitArgs {
     jint debugPort;
 } JDK1_1InitArgs;
 
+/**
+ * Define the trusted shared class.
+ */
+JNIEXPORT jclass JNICALL
+JVM_DefineTrustedSharedClass(JNIEnv *env, const char *name, jobject loader);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -2506,6 +2506,30 @@ void InstanceKlass::clean_weak_instanceklass_links() {
   clean_method_data();
 }
 
+#if INCLUDE_AGGRESSIVE_CDS
+bool InstanceKlass::has_stored_fingerprint() const {
+  return Arguments::is_dumping_archive() || is_shared();
+}
+
+uint64_t InstanceKlass::get_stored_fingerprint() const {
+  address adr = adr_fingerprint();
+  if (adr != nullptr) {
+    return (uint64_t)Bytes::get_native_u8(adr); // adr may not be 64-bit aligned
+  }
+  return 0;
+}
+
+void InstanceKlass::store_fingerprint(uint64_t fingerprint) {
+  address adr = adr_fingerprint();
+  if (adr != nullptr) {
+    Bytes::put_native_u8(adr, (u8)fingerprint); // adr may not be 64-bit aligned
+
+    ResourceMark rm;
+    log_trace(class, fingerprint)("stored as " UINT64_FORMAT_X_0 " for class %s", fingerprint, external_name());
+  }
+}
+#endif
+
 void InstanceKlass::clean_implementors_list() {
   assert(is_loader_alive(), "this klass should be live");
   if (is_interface()) {

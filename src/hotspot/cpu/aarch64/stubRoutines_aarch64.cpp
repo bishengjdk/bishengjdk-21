@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2003, 2024, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -62,15 +62,21 @@ address StubRoutines::aarch64::_string_indexof_linear_uu = nullptr;
 address StubRoutines::aarch64::_string_indexof_linear_ul = nullptr;
 address StubRoutines::aarch64::_large_byte_array_inflate = nullptr;
 address StubRoutines::aarch64::_method_entry_barrier = nullptr;
+address StubRoutines::aarch64::_convert_masked_utf8_to_utf16 = NULL;
+address StubRoutines::aarch64::_scalar_convert_utf8_to_utf16 = NULL;
 
 static void empty_spin_wait() { }
 address StubRoutines::aarch64::_spin_wait = CAST_FROM_FN_PTR(address, empty_spin_wait);
 
 bool StubRoutines::aarch64::_completed = false;
 
-/**
- *  crc_table[] from jdk/src/share/native/java/util/zip/zlib-1.2.5/crc32.h
- */
+
+// UTF conversion lookup tables derived from simdutf (https://github.com/simdutf/simdutf).
+// See src/hotspot/share/legal/simdutf.md for licensing details.
+#define STUB_ROUTINES_AARCH64_SIMDUTF_TABLES_IMPL
+#include "simdutf_utf_tables.hpp"
+#undef STUB_ROUTINES_AARCH64_SIMDUTF_TABLES_IMPL
+
 ATTRIBUTE_ALIGNED(4096) juint StubRoutines::aarch64::_crc_table[] =
 {
     // Table 0
