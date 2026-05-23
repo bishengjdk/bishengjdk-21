@@ -120,6 +120,7 @@ public class TestStop {
             try (RecordingStream inner = new RecordingStream()) {
                 inner.setMaxSize(100_000_000);
                 inner.onEvent(e -> innerCount.incrementAndGet());
+                inner.setPreRecord(0);
                 inner.startAsync();
 
                 MarkEvent b = new MarkEvent();

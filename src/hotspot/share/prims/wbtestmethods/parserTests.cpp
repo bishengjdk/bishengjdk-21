@@ -180,6 +180,7 @@ WB_ENTRY(jobjectArray, WB_ParseCommandLine(JNIEnv* env, jobject o, jstring j_cmd
     returnvalue_array_ah->obj_at_put(i*2+1, parsedValue);
   }
 
+  parser.cleanup();
   return (jobjectArray) JNIHandles::make_local(returnvalue_array_ah());
 
 WB_END

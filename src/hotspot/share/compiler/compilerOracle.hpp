@@ -51,6 +51,7 @@ class methodHandle;
   option(Print, "print", Bool) \
   option(Inline,  "inline", Bool) \
   option(DontInline,  "dontinline", Bool) \
+  option(Dontprediction,  "dontprediction", Bool) \
   option(Blackhole,  "blackhole", Bool) \
   option(CompileOnly, "compileonly", Bool)\
   option(Exclude, "exclude", Bool) \
@@ -156,6 +157,9 @@ class CompilerOracle : AllStatic {
 
   // A wrapper for checking bool options
   static bool has_option(const methodHandle& method, enum CompileCommand option);
+
+  // A wrapper for checking prediction option
+  static bool should_not_prediction(const methodHandle& method);
 
   // Check if method has option and value set. If yes, overwrite value and return true,
   // otherwise leave value unchanged and return false.

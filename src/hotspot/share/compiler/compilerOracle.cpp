@@ -443,6 +443,10 @@ bool CompilerOracle::should_inline(const methodHandle& method) {
   return (check_predicate(CompileCommand::Inline, method));
 }
 
+bool CompilerOracle::should_not_prediction(const methodHandle& method) {
+  return (check_predicate(CompileCommand::Dontprediction, method));
+}
+
 bool CompilerOracle::should_not_inline(const methodHandle& method) {
   return check_predicate(CompileCommand::DontInline, method) || check_predicate(CompileCommand::Exclude, method);
 }
