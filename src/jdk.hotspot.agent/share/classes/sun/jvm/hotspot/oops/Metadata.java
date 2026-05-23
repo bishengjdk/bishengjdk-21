@@ -53,6 +53,7 @@ public abstract class Metadata extends VMObject {
   }
 
   private static VirtualBaseConstructor<Metadata> metadataConstructor;
+  private static Map<Address,Metadata> cachedMap = new HashMap<Address,Metadata>();
 
   private static synchronized void initialize(TypeDataBase db) throws WrongTypeException {
     metadataConstructor = new VirtualBaseConstructor<>(db, db.lookupType("Metadata"), null, null);
@@ -71,10 +72,26 @@ public abstract class Metadata extends VMObject {
     metadataConstructor.addMapping("ConstMethod", ConstMethod.class);
     metadataConstructor.addMapping("ConstantPool", ConstantPool.class);
     metadataConstructor.addMapping("ConstantPoolCache", ConstantPoolCache.class);
+    // Force Metadata CachedMap to get re-initialized later
+    clearCachedMap();
+  }
+
+  // Cache should be cleared before each attach to prevent data corruption
+  private static void clearCachedMap() {
+    if (cachedMap != null && !cachedMap.isEmpty()) {
+      cachedMap.clear();
+    }
   }
 
   public static Metadata instantiateWrapperFor(Address addr) {
-    return metadataConstructor.instantiateWrapperFor(addr);
+    Metadata metadata;
+    if (!cachedMap.containsKey(addr)) {
+      metadata = metadataConstructor.instantiateWrapperFor(addr);
+      cachedMap.put(addr, metadata);
+    } else {
+      metadata = (Metadata)cachedMap.get(addr);
+    }
+    return metadata;
   }
 
   public void iterate(MetadataVisitor visitor) {
