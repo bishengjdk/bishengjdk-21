@@ -117,7 +117,7 @@ final class DCmdStart extends AbstractDCmd {
         }
 
         if (delay != null) {
-            if (delay < 1000L * 1000L * 1000L) {
+            if (delay >= 0 && delay < 1000L * 1000L * 1000L) {
                 // to avoid typo, delay shorter than 1s makes no sense.
                 throw new DCmdException("Could not start recording, delay must be at least 1 second.");
             }
@@ -201,13 +201,18 @@ final class DCmdStart extends AbstractDCmd {
             recording.setDumpOnExit(dumpOnExit);
         }
 
-        if (delay != null) {
+        if (delay != null && delay >= 0) {
             Duration dDelay = Duration.ofNanos(delay);
             recording.scheduleStart(dDelay);
             print("Recording " + recording.getId() + " scheduled to start in ");
             printTimespan(dDelay, " ");
             print(".");
         } else {
+            if (delay != null && delay < 0) {
+                recording.setPreRecord(delay);
+            } else {
+                recording.setPreRecord(0);
+            }
             recording.start();
             print("Started recording " + recording.getId() + ".");
         }

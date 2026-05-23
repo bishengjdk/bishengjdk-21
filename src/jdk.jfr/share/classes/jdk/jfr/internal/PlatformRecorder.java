@@ -254,7 +254,7 @@ public final class PlatformRecorder {
             }
             recording.setState(RecordingState.RUNNING);
             updateSettings(false);
-            recording.setStartTime(startTime);
+            recording.setStartTime(startTime.plusNanos(recording.getPreRecord()));
             writeMetaEvents();
             setRunPeriodicTask(true);
         } else {
@@ -271,12 +271,12 @@ public final class PlatformRecorder {
             }
             startNanos = Utils.getChunkStartNanos();
             startTime = Utils.epochNanosToInstant(startNanos);
-            recording.setStartTime(startTime);
+            recording.setStartTime(startTime.plusNanos(recording.getPreRecord()));
             recording.setState(RecordingState.RUNNING);
             updateSettings(false);
             writeMetaEvents();
             if (currentChunk != null) {
-                finishChunk(currentChunk, startTime, recording);
+                finishChunk(currentChunk, startTime, recording.getPreRecord() == 0 ? recording : null);
             }
             currentChunk = newChunk;
         }
