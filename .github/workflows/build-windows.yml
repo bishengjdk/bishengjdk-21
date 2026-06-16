@@ -119,6 +119,11 @@ jobs:
             --add Microsoft.VisualStudio.Component.VC.${{ inputs.msvc-toolset-version }}.${{ inputs.msvc-toolset-architecture }}
         if: steps.toolchain-check.outputs.toolchain-installed != 'true'
 
+      - name: 'Generate configure script'
+        run: bash configure autogen
+        shell: bash
+        timeout-minutes: 10
+
       - name: 'Configure'
         run: >
           bash configure
