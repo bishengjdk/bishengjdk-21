@@ -148,7 +148,7 @@ AC_DEFUN([BASIC_CHECK_MAKE_VERSION],
           if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
             MAKE_EXPECTED_ENV='cygwin'
           elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
-            MAKE_EXPECTED_ENV='msys'
+            MAKE_EXPECTED_ENV='cygwin'
           elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl1" || test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl2"; then
             if test "x$OPENJDK_BUILD_CPU" = "xaarch64"; then
               MAKE_EXPECTED_ENV='aarch64-.*-linux-gnu'
