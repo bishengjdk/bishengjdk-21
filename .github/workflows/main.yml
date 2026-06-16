@@ -213,4 +213,4 @@ jobs:
     with:
       platform: windows-x64
       bootjdk-platform: windows-x64
-      runs-on: windows-latest
+      runs-on: windows-2022
