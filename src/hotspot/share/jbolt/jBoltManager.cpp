@@ -21,9 +21,14 @@
  * questions.
  */
 
+#include "precompiled.hpp"
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _WIN32
 #include <unistd.h>
+#else
+#include <io.h>
+#endif
 
 #include "classfile/javaClasses.inline.hpp"
 #include "classfile/symbolTable.hpp"
@@ -343,7 +348,9 @@ void JBoltManager::construct_stacktrace(const JfrStackTrace& stacktrace) {
     return;
   }
 
+#ifdef LINUX
   os::Linux::jboltLog_precalc(topFrameIndex, max_frames);
+#endif
 
   JBoltFunc **tempfunc = NULL;
 
@@ -373,7 +380,11 @@ void JBoltManager::construct_stacktrace(const JfrStackTrace& stacktrace) {
     JBoltMethodKey method_key(method->constants()->pool_holder()->name(), method->name(), method->signature());
     JBoltFunc* func = JBoltFunc::constructor(frame.get_klass(), frame.get_methodId(), compiled->size(), method_key);
 
+#ifdef LINUX
     if (!os::Linux::jboltLog_do(related_data_jbolt, (address)&stacktrace, i, compiled->comp_level(), (address)func, (address*)&tempfunc)) {
+#else
+    if (false) {
+#endif
       delete func;
       func = NULL;
       break;
@@ -564,7 +575,11 @@ void JBoltManager::check_order_file() {
     vm_exit_during_initialization("JBoltOrderFile is not set!");
   }
 
+#ifdef _WIN32
+  bool file_exist = (_access(JBoltOrderFile, 0) == 0);
+#else
   bool file_exist = (::access(JBoltOrderFile, F_OK) == 0);
+#endif
   if (file_exist) {
     if (JBoltDumpMode) {
       log_warning(jbolt)("JBoltOrderFile to dump already exists and will be overwritten: file=%s.", JBoltOrderFile);
@@ -1083,7 +1098,7 @@ int JBoltManager::clear_manager() {
 int JBoltManager::clear_last_sample_datas() {
   int ret = 0;
   // Clear _table_jbolt in JfrStackTraceRepository
-  ret = JfrStackTraceRepository::clear_jbolt();
+  ret = (int)JfrStackTraceRepository::clear_jbolt();
   // Clear JBoltCallGraph
   ret = JBoltCallGraph::callgraph_instance().clear_instance();
   // Clear JBoltManager

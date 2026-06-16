@@ -1219,6 +1219,10 @@ void os::javaTimeNanos_info(jvmtiTimerInfo *info_ptr) {
   info_ptr->kind = JVMTI_TIMER_ELAPSED;                // elapsed not CPU time
 }
 
+bool os::supports_monotonic_clock() {
+  return true;
+}
+
 char* os::local_time_string(char *buf, size_t buflen) {
   SYSTEMTIME st;
   GetLocalTime(&st);
@@ -3734,6 +3738,11 @@ bool os::pd_uncommit_memory(char* addr, size_t bytes, bool exec) {
   assert((size_t) addr % os::vm_page_size() == 0, "uncommit on page boundaries");
   assert(bytes % os::vm_page_size() == 0, "uncommit in page-sized chunks");
   return (virtualFree(addr, bytes, MEM_DECOMMIT) == TRUE);
+}
+
+bool os::pd_free_heap_physical_memory(char *addr, size_t bytes) {
+  // Not supported on Windows
+  return false;
 }
 
 bool os::pd_release_memory(char* addr, size_t bytes) {

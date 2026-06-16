@@ -123,7 +123,11 @@ void NMTDCmd::execute(DCmdSource source, TRAPS) {
     NMTDCmd::set_start_time(time(0));
     time_t startTime = NMTDCmd::get_start_time();
     struct tm startTimeTm = {0};
+#ifdef _WIN32
+    if (localtime_s(&startTimeTm, &startTime) != 0) {
+#else
     if (localtime_r(&startTime, &startTimeTm) == NULL) {
+#endif
     output()->print_cr("Baseline taken");
     } else {
     output()->print_cr("Baseline taken, start time is %d-%02d-%02d %02d:%02d:%02d",

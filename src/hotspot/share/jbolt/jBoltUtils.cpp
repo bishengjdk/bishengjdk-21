@@ -21,6 +21,7 @@
  * questions.
  */
 
+#include "precompiled.hpp"
 #include "jbolt/jBoltUtils.hpp"
 
 JBoltUtils::MetaDataKeepAliveMark::MetaDataKeepAliveMark(Thread* thread) : _thread(thread), _kept() {

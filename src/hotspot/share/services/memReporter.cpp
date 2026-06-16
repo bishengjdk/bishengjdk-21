@@ -460,7 +460,11 @@ void MemSummaryDiffReporter::report_diff() {
   time_t startTime = NMTDCmd::get_start_time();
   time_t endTime = time(0);
   struct tm endTimeTm = {0};
+#ifdef _WIN32
+  if (localtime_s(&endTimeTm, &endTime) != 0) {
+#else
   if (localtime_r(&endTime, &endTimeTm) == NULL) {
+#endif
     out->print_cr("\nNative Memory Tracking:\n");
   } else {
     out->print_cr("\nNative Memory Tracking: end time is %d-%02d-%02d %02d:%02d:%02d, elapsed time is %d secs\n",

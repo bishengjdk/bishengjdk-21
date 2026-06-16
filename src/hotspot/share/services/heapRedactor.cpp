@@ -22,6 +22,8 @@
  * information or have any questions.
  */
 
+#include "precompiled.hpp"
+
 #include "runtime/globals.hpp"
 #include "runtime/os.hpp"
 #include "runtime/arguments.hpp"

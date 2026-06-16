@@ -21,7 +21,9 @@
 #include "precompiled.hpp"
 #include "dynamicMaxHeap.hpp"
 #include "runtime/globals_extension.hpp"
+#ifdef LINUX
 #include "os_linux.hpp"
+#endif
 #include "logging/logConfiguration.hpp"
 
 size_t DynamicMaxHeapConfig::_initial_max_heap_size = 0;

@@ -21,6 +21,7 @@
  * questions.
  */
 
+#include "precompiled.hpp"
 #include "jbolt/jBoltDcmds.hpp"
 #include "jbolt/jBoltControlThread.hpp"
 #include "jbolt/jBoltManager.hpp"
@@ -189,8 +190,6 @@ void JBoltDumpDCmd::execute(DCmdSource source, TRAPS) {
   }
 
   const char* path = _filename.value();
-  char buffer[PATH_MAX];
-  char* rp = NULL;
 
   JBoltErrorCode ec = JBoltManager::dump_order_in_jcmd(path);
   switch (ec) {

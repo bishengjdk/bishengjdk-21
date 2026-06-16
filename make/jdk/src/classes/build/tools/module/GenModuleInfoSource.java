@@ -341,11 +341,16 @@ public class GenModuleInfoSource {
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(e -> writer.println(e.getValue()));
 
-            // print qualified exports
+            // print qualified exports, filtering out targets not in modules set
             exports.entrySet().stream()
                 .filter(e -> !e.getValue().targets.isEmpty())
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> writer.println(e.getValue()));
+                .forEach(e -> {
+                    e.getValue().targets.removeIf(mn -> !modules.contains(mn));
+                    if (!e.getValue().targets.isEmpty()) {
+                        writer.println(e.getValue());
+                    }
+                });
 
             // print unqualified opens
             opens.entrySet().stream()
@@ -353,11 +358,16 @@ public class GenModuleInfoSource {
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(e -> writer.println(e.getValue()));
 
-            // print qualified opens
+            // print qualified opens, filtering out targets not in modules set
             opens.entrySet().stream()
                 .filter(e -> !e.getValue().targets.isEmpty())
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> writer.println(e.getValue()));
+                .forEach(e -> {
+                    e.getValue().targets.removeIf(mn -> !modules.contains(mn));
+                    if (!e.getValue().targets.isEmpty()) {
+                        writer.println(e.getValue());
+                    }
+                });
 
             // uses and provides
             writer.println();

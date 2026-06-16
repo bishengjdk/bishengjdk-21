@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -23,4 +23,32 @@
 # questions.
 #
 
-DISABLED_WARNINGS_java += this-escape module
+name: 'Get JTReg'
+description: 'Get JTReg'
+outputs:
+  path:
+    description: 'Path to the installed JTReg'
+    value: ${{ steps.path-name.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - name: 'Get JTReg version configuration'
+      id: version
+      uses: ./.github/actions/config
+      with:
+        var: JTREG_VERSION
+
+    - name: 'Download JTReg artifact'
+      id: download-jtreg
+      uses: actions/download-artifact@v4
+      with:
+        name: bundles-jtreg-${{ steps.version.outputs.value }}
+        path: jtreg/installed
+
+    - name: 'Export path to where JTReg is installed'
+      id: path-name
+      run: |
+        # Export the path
+        echo 'path=jtreg/installed' >> $GITHUB_OUTPUT
+      shell: bash

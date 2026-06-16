@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -23,4 +23,22 @@
 # questions.
 #
 
-DISABLED_WARNINGS_java += this-escape module
+name: 'Get MSYS2'
+description: 'Download MSYS2 and prepare a Windows host'
+
+runs:
+  using: composite
+  steps:
+    - name: 'Install MSYS2'
+      id: msys2
+      uses: msys2/setup-msys2@v2.28.0
+      with:
+        install: 'autoconf tar unzip zip make'
+        path-type: minimal
+        release: false
+
+      # We can't run bash until this is completed, so stick with pwsh
+    - name: 'Set MSYS2 path'
+      run: |
+        echo "${{ steps.msys2.outputs.msys2-location }}/usr/bin" >> $env:GITHUB_PATH
+      shell: pwsh

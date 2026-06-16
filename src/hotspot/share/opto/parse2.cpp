@@ -46,12 +46,14 @@
 #include "runtime/deoptimization.hpp"
 #include "runtime/sharedRuntime.hpp"
 
+#ifndef _WIN32
 #ifdef AARCH64
   __asm__(".symver log2f,log2f@GLIBC_2.17");
 #endif
 
 #ifdef AMD64
   __asm__(".symver log2f,log2f@GLIBC_2.2.5");
+#endif
 #endif
 
 #ifndef PRODUCT

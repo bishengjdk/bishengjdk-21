@@ -36,14 +36,22 @@ include $(TOPDIR)/make/ModuleTools.gmk
 
 ALL_MODULEINFO_CLASSES := $(wildcard $(JDK_OUTPUTDIR)/modules/*/module-info.class)
 
+ifneq ($(OPENJDK_TARGET_OS), windows)
 $(eval $(call SetupExecute, optimize_image, \
     WARN := Optimizing the exploded image, \
     DEPS := $(ALL_MODULEINFO_CLASSES) $(BUILD_JIGSAW_CLASSES), \
     OUTPUT_DIR := $(JDK_OUTPUTDIR), \
     COMMAND := $(TOOL_ADD_PACKAGES_ATTRIBUTE) $(JDK_OUTPUTDIR), \
 ))
-
 TARGETS := $(optimize_image_TARGET)
+else
+# Skip AddPackagesAttribute on Windows due to fixpath crash
+$(JDK_OUTPUTDIR)/_optimize_image_exec.marker: $(ALL_MODULEINFO_CLASSES) $(BUILD_JIGSAW_CLASSES)
+	$(call MakeDir, $(JDK_OUTPUTDIR))
+	$(call LogWarn, Skipping AddPackagesAttribute on Windows)
+	$(TOUCH) $@
+TARGETS := $(JDK_OUTPUTDIR)/_optimize_image_exec.marker
+endif
 
 ################################################################################
 

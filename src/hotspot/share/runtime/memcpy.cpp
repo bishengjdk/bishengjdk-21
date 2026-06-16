@@ -2,6 +2,8 @@
  * Copyright (c) Huawei Technologies Co., Ltd. 2018-2024. All rights reserved.
  */
 
+#include "precompiled.hpp"
+
 #if defined( __GNUC__ ) && \
 (__GNUC__ >= 5  ||  (__GNUC__ == 4  &&  __GNUC_MINOR__ >= 7))
 #include <string.h>

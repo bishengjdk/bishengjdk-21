@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -23,4 +23,24 @@
 # questions.
 #
 
-DISABLED_WARNINGS_java += this-escape module
+name: 'Config'
+description: 'Read JDK Configuration Variables'
+inputs:
+  var:
+    description: 'The name of the variable to read'
+    required: true
+outputs:
+  value:
+    description: 'The value of the configuration variable'
+    value: ${{ steps.read-config.outputs.value }}
+
+runs:
+  using: composite
+  steps:
+    - name: 'Read configuration variable from repo'
+      id: read-config
+      run: |
+        # Extract value from configuration file
+        value="$(grep -h ${{ inputs.var }}= make/conf/github-actions.conf | cut -d '=' -f 2-)"
+        echo "value=$value" >> $GITHUB_OUTPUT
+      shell: bash

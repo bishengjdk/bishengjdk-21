@@ -64,6 +64,25 @@ struct UpcallContext {
 };
 
 #if defined(AARCH64) || defined(AMD64)
+#ifdef _WIN32
+static DWORD tls_index = TLS_OUT_OF_INDEXES;
+
+void ThreadLocalUpCall::init() {
+  tls_index = TlsAlloc();
+  guarantee(tls_index != TLS_OUT_OF_INDEXES, "TlsAlloc failed");
+}
+
+void* ThreadLocalUpCall::get() {
+    return TlsGetValue(tls_index);
+}
+
+void ThreadLocalUpCall::set() {
+    if (TlsGetValue(tls_index) == nullptr) {
+      UpcallContext* ctx = new UpcallContext();
+      TlsSetValue(tls_index, ctx);
+    }
+}
+#else
 static unsigned int upcall_thread_key;
 
 void ThreadLocalUpCall::upcall_destructor(void* threadContext) {
@@ -85,6 +104,7 @@ void ThreadLocalUpCall::set() {
       pthread_setspecific(upcall_thread_key, threadContext);
     }
 }
+#endif // _WIN32
 #else
 APPROVED_CPP_THREAD_LOCAL UpcallContext threadContext;
 #endif // AARCH64 || AMD64

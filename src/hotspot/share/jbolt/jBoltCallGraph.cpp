@@ -231,7 +231,9 @@ static void deal_with_each_func(GrowableArray<JBoltCluster>* clusters, GrowableA
     for (int j = 0; j < func.call_indexes()->length(); ++j) {
       const JBoltCall& call = _calls->at(func.call_indexes()->at(j));
 
+#ifdef LINUX
       bestPred = os::Linux::jboltMerge_judge(data_layout_jbolt, call.caller().cluster_id(), (address)clusters, (address)merged, (address)cluster);
+#endif
 
       if (bestPred == -1) continue;
 
