@@ -1627,7 +1627,7 @@ bool DumperSupport::dump_replace_value(CALL_DO_LOOKUP_REPLACE_VALUE fn, Abstract
     }
 
     size_t char_length = strlen(anonymous_value);
-    length = DumperSupport::calculate_array_max_length(writer, array, header_size, char_length);
+    length = DumperSupport::calculate_array_max_length(writer, array, header_size, (int)char_length);
 
     int type_size = type2aelembytes(type);
     u4 length_in_bytes = (u4)length * type_size;
@@ -3081,7 +3081,7 @@ void VM_HeapDumper::do_heapVector(){
         typeArrayOop array = (typeArrayOopDesc*)items[i];
 
         char *anonymous_value = fn(writer(), array);
-        int length = anonymous_value == NULL ? array->length() : strlen(anonymous_value);
+        int length = anonymous_value == NULL ? array->length() : (int)strlen(anonymous_value);
 
         u4 length_in_bytes = (u4) length * type_size;
         if (length_in_bytes > max_bytes) {
