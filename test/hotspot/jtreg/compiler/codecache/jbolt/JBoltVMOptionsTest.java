@@ -26,6 +26,7 @@
  * @summary Test JBolt VM options.
  * @library /test/lib
  * @requires vm.flagless
+ * @requires os.family != "windows"
  *
  * @run driver compiler.codecache.jbolt.JBoltVMOptionsTest
  */

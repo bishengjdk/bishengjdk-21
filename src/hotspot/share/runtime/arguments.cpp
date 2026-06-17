@@ -73,7 +73,9 @@
 #endif
 #ifdef AARCH64
 #include "jprofilecache/jitProfileRecord.hpp"
+#ifndef _WIN32
 #include <sys/file.h>
+#endif
 #endif
 
 #include <limits>

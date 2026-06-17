@@ -23,6 +23,7 @@
  *
  */
 
+#include "precompiled.hpp"
 #include "classfile/classLoaderData.hpp"
 #include "classfile/classLoaderData.inline.hpp"
 #include "classfile/classLoader.hpp"

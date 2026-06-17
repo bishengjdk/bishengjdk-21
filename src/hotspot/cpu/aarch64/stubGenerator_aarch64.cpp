@@ -5649,9 +5649,7 @@ class StubGenerator: public StubCodeGenerator {
     FloatRegister vCalcGreg = v8;
     FloatRegister vCalcViki = v9;
     FloatRegister vErrors = v10;
- 
-    uint8_t idx;
- 
+
     __ align(CodeEntryAlignment);
  
     StubCodeMark mark(this, "StubRoutines", "scalar_convert_utf8_to_utf16");

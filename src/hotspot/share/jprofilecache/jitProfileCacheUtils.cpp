@@ -97,11 +97,11 @@ bool JitProfileCacheUtils::is_in_unpreloadable_classes_black_list(Symbol* s) {
 
 bool JitProfileCacheUtils::is_in_unpreloadable_classes_black_list(const char* str) {
   static const char* const JFR_PREFIX = "jdk/jfr";
-  static const int JFR_PREFIX_LEN = strlen(JFR_PREFIX);
+  static const int JFR_PREFIX_LEN = (int)strlen(JFR_PREFIX);
   static const char* const KRB5_PREFIX = "sun/security/krb5";
-  static const int KRB5_PREFIX_LEN = strlen(KRB5_PREFIX);
+  static const int KRB5_PREFIX_LEN = (int)strlen(KRB5_PREFIX);
   static const char* const PLATFORMLOGGER_PREFIX = "sun/util/logging/PlatformLogger";
-  static const int PLATFORMLOGGER_LEN = strlen(PLATFORMLOGGER_PREFIX);
+  static const int PLATFORMLOGGER_LEN = (int)strlen(PLATFORMLOGGER_PREFIX);
   return strncmp(str, JFR_PREFIX, JFR_PREFIX_LEN) == 0 ||
          strncmp(str, KRB5_PREFIX, KRB5_PREFIX_LEN) == 0 ||
          strncmp(str, PLATFORMLOGGER_PREFIX, PLATFORMLOGGER_LEN) == 0;

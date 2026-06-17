@@ -22,6 +22,7 @@
  * questions.
  */
 
+#include "precompiled.hpp"
 #include "classfile/symbolTable.hpp"
 #include "jprofilecache/jitProfileCacheClass.hpp"
 #include "jprofilecache/jitProfileCacheUtils.hpp"

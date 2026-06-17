@@ -22,6 +22,7 @@
  * questions.
  */
 
+#include "precompiled.hpp"
 #include "jprofilecache/jitProfileCacheHolders.hpp"
 #include "classfile/classLoaderData.hpp"
 #include "classfile/classLoaderData.inline.hpp"

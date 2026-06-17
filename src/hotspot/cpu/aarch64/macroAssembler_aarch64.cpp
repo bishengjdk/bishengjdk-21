@@ -6404,9 +6404,7 @@ void MacroAssembler::encode_utf8_from_utf16(Register src, Register dst,
   FloatRegister vCalcJack = vtmp7;
   FloatRegister vDupEven = vtmp8;
   FloatRegister v3BShuffle = vtmp9;
- 
-  uint64_t offset;
- 
+
   prfm(Address(src), PLDL1STRM);
   Label LOOP_8,DONE,LOOP_8_TAIL,done_pop;
  

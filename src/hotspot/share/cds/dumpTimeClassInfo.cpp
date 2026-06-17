@@ -200,7 +200,7 @@ void DumpTimeClassInfo::copy_shared_class_file(ClassFileStream* cfs) {
 
 void DumpTimeClassInfo::copy_url_string(char* string_value) {
   assert(strlen(string_value) != 0, "sanity");
-  int string_len = strlen(string_value) + 1;
+  int string_len = (int)strlen(string_value) + 1;
   int size = offset_of(DTSharedData, data) + string_len;
   _url_string = (DTSharedData*) NEW_C_HEAP_ARRAY(u1, size, mtClassShared);
   _url_string->length = string_len;
