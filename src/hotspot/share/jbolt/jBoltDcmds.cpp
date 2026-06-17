@@ -190,6 +190,10 @@ void JBoltDumpDCmd::execute(DCmdSource source, TRAPS) {
   }
 
   const char* path = _filename.value();
+#ifdef __linux__
+  char buffer[PATH_MAX];
+  char* rp = NULL;
+#endif
 
   JBoltErrorCode ec = JBoltManager::dump_order_in_jcmd(path);
   switch (ec) {
