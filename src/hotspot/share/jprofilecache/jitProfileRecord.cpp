@@ -310,7 +310,7 @@ void JitProfileRecorder::write_string(const char* src, size_t len) {
   assert(src != nullptr && len != 0, "empty string is not allowed");
   _profilelog->write(src, len);
   _profilelog->write("\0", 1);
-  _pos += len + 1;
+  _pos += (unsigned int)len + 1;
   update_max_symbol_length((int)len);
 }
 
@@ -575,7 +575,11 @@ bool JitProfileRecorder::flush_record() {
   if (JProfilingCacheAutoArchiveDir != nullptr) {
     _profilelog = new (mtInternal) randomAccessFileStream(_auto_jpcfile_filepointer);
   } else {
+#ifdef _WIN32
+    int fd = open(logfile_name(), O_CREAT | O_WRONLY, _S_IREAD | _S_IWRITE);
+#else
     int fd = open(logfile_name(), O_CREAT, S_IRUSR | S_IWUSR);
+#endif
     if (fd < 0) {
       log_error(jprofilecache)("[JitProfileCache] ERROR : open log file fail! path is %s", logfile_name());
       return false;

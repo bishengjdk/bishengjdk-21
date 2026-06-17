@@ -254,7 +254,7 @@ bool JitProfileCacheFileParser::parse_header() {
 }
 
 Symbol* JitProfileCacheFileParser::create_symbol(const char* char_name) {
-  return SymbolTable::new_symbol(char_name, strlen(char_name));
+  return SymbolTable::new_symbol(char_name, (int)strlen(char_name));
 }
 
 bool JitProfileCacheFileParser::parse_class() {

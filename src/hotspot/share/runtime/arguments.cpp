@@ -3138,6 +3138,7 @@ jint Arguments::finalize_vm_init_args(bool patch_mod_javabase) {
   }
 
   if (JProfilingCacheAutoArchiveDir != nullptr) {
+#ifndef _WIN32
     if (FLAG_IS_CMDLINE(JProfilingCacheRecording) || FLAG_IS_CMDLINE(JProfilingCacheCompileAdvance)) {
       warning("Profile cache file will be dumpped automatically. No need to set JProfilingCacheRecording/JProfilingCacheCompileAdvance");
       JProfilingCacheRecording = false;
@@ -3228,6 +3229,7 @@ jint Arguments::finalize_vm_init_args(bool patch_mod_javabase) {
         }
       }
     }
+#endif // !_WIN32
   }
 
   if (JProfilingCacheCompileAdvance && ProfileCacheAggressiveInit && JProfilingCacheDelayLoadTime < 50) {
